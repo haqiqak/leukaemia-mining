@@ -2,7 +2,7 @@
 
 *Can gene activity reveal which type of leukaemia a patient has?*
 
-**[Read the project write-up](docs/site/index.html)**: a one-page explanation of the problem, the method and the results, with charts. Open the file in any browser, or publish it with GitHub Pages (see [Project page](#project-page)).
+**[Read the project write-up](https://haqiqak.github.io/leukaemia-mining/site/)**: a one-page explanation of the problem, the method and the results, with charts.
 
 A Python reproduction and extension of the microarray case study in Torgo's *Data Mining with R: Learning with Case Studies* (2nd ed., Chapter 7). The project rebuilds the original classification workflow, then adds an experiment on how easily such results become too good to be true.
 
@@ -70,9 +70,9 @@ Run the notebooks in order:
 
 ## Project page
 
-`docs/site/index.html` needs no server and no internet connection. Every number on it comes from `docs/site/assets/data.js`; after rerunning the notebooks, refresh it with `python src/build_site_data.py`.
+The write-up is the file `docs/site/index.html`. It can also be opened locally in any browser, with no server and no internet connection. Every number on it comes from `docs/site/assets/data.js`; after rerunning the notebooks, refresh it with `python src/build_site_data.py`.
 
-To publish it, open the repository's Settings, then Pages, choose "Deploy from a branch", select the `main` branch and the `/docs` folder, and save. The page is then served at `https://<account>.github.io/<repository>/` (the root redirects to `/site/`).
+It is published with GitHub Pages from the `main` branch and the `/docs` folder (repository Settings, then Pages).
 
 ## Differences from the book
 
