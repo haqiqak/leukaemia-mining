@@ -90,6 +90,5 @@ data = {
 
 with open(OUT + 'data.js', 'w') as f:
     f.write('window.RESULTS = ' + json.dumps(data, default=float, separators=(',', ':')) + ';\n')
-for fig in ('data_check', 'baseline_accuracy', 'baseline_confusion', 'leakage_accuracy'):
-    shutil.copy(f'{R}{fig}.png', f'{OUT}{fig}.png')
+shutil.copy(R + 'data_check.png', OUT + 'data_check.png')
 print('written', OUT)

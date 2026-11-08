@@ -1,106 +1,91 @@
 # Leukaemia Mining
 
-Can gene activity reveal which type of leukaemia a patient has?
+*Can gene activity reveal which type of leukaemia a patient has?*
 
-A Python reproduction and extension of the microarray case study from Torgo's *Data Mining with R: Learning with Case Studies* (2nd ed., Chapter 7). The project reproduces the original classification workflow and adds one evaluated extension.
+**[Read the project write-up](docs/site/index.html)**: a one-page explanation of the problem, the method and the results, with charts. Open the file in any browser, or publish it with GitHub Pages (see [Project page](#project-page)).
 
-## The problem in one paragraph
+A Python reproduction and extension of the microarray case study in Torgo's *Data Mining with R: Learning with Case Studies* (2nd ed., Chapter 7). The project rebuilds the original classification workflow, then adds an experiment on how easily such results become too good to be true.
 
-Acute lymphoblastic leukaemia (ALL) comes in subtypes, each linked to a different genetic abnormality. A lab chip measures the activity of about 12,000 genes per patient. Using 94 B-cell patients, the goal is to predict which of four classes (BCR/ABL, ALL1/AF4, E2A/PBX1, NEG) a patient belongs to. The difficulty is many genes and very few patients.
+## The problem
 
-## Documentation
+Acute lymphoblastic leukaemia comes in subtypes, each linked to a different genetic change. A lab chip measures the activity of 12,625 genes per patient. From 94 B-cell patients, the task is to name one of four classes: BCR/ABL, ALL1/AF4, E2A/PBX1 or NEG (none of these). The difficulty is far more genes than patients, and one class with only five patients.
 
-| File | Contents |
+## What was done
+
+1. **Data.** The `ALL` data set was exported from R and checked against the book: 94 patients, 12,625 genes, class counts 42, 37, 10 and 5.
+2. **Baseline.** The book's workflow was rebuilt in Python: an ANOVA gene filter, then either all remaining genes or the 30 best by random-forest importance, then random forest, SVM and k-NN. 24 workflows were scored over 100 resampling rounds, with gene selection redone inside every round so the test patients never influence it.
+3. **Extension.** The same workflows were run with gene selection done once on all patients, to measure how much accuracy that leak adds.
+4. **Checks.** A shuffled-label control shows the honest pipeline invents no signal. A cell-stage check tests whether ALL1/AF4 is only being recognised through its cell stage.
+
+Besides accuracy, results report balanced accuracy, per-class recall and a confusion matrix, because the smallest class is easy to miss.
+
+## Results at a glance
+
+Means over the resampling rounds. Always answering NEG scores 0.447.
+
+| Result | Value |
 | --- | --- |
-| [docs/02_problem_statement.md](docs/02_problem_statement.md) | Plain-language explanation of the biology, the task, and why it is hard |
-| [docs/01_chapter7_walkthrough.md](docs/01_chapter7_walkthrough.md) | Section-by-section walkthrough of the book's chapter (original wording, not a copy) |
+| Best accuracy | 0.852 (`s2_knn3_z`) |
+| Best balanced accuracy | 0.885 (`s1_knn3_iqr`), with E2A/PBX1 recall 0.95 |
+| Best workflow when genes are selected outside the loop | 0.928 (0.839 inside) |
+| Average accuracy gain from that leak, 24 workflows | +0.039 (+0.063 for the 30-gene strategy) |
+| Shuffled labels, selection inside / outside: best workflow | 0.448 / 0.578 |
+| ALL1/AF4 against NEG within one cell stage (18 patients) | accuracy 0.960 |
+
+In short: the ranking of methods follows the book (k-NN and the better SVM settings lead, no random forest in the top ten), the best model depends on the metric, and choosing genes before splitting the data inflates results.
 
 ## Repository layout
 
 ```
-docs/        problem statement, chapter walkthrough and the project page (docs/site)
-data/        the dataset (see data/README.md)
-notebooks/   analysis notebooks 01 to 05
-src/         reusable code
-results/     tables and figures produced by the notebooks
+docs/        problem statement, chapter walkthrough, project page (docs/site)
+data/        exported data set (see data/README.md)
+notebooks/   01 data check, 02 baseline, 03 leakage, 04 label shuffle, 05 cell stage
+src/         pipeline code, R export scripts, page data builder
+results/     tables and figures written by the notebooks
 ```
 
-## Reproducing the results
+Background reading: [docs/02_problem_statement.md](docs/02_problem_statement.md) explains the biology and the task in plain language, and [docs/01_chapter7_walkthrough.md](docs/01_chapter7_walkthrough.md) walks through the book's chapter.
 
-Tested with Python 3.13.5 and R 4.5.3 on Windows. All random draws use fixed seeds; a clean rerun of every notebook reproduced the saved result files exactly.
+## Run it
 
-1. Create an environment and install the Python packages (versions are pinned):
+Tested with Python 3.13.5 and R 4.5.3. Random draws use fixed seeds, and a clean rerun of every notebook reproduced the saved results exactly.
 
-   ```
-   python -m venv .venv
-   .venv\Scripts\activate        # Linux and macOS: source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
+```
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-2. Export the data from R (one time; the exported files are also included in `data/`). Install the Bioconductor packages `ALL`, `genefilter` and `hgu95av2.db`, then run, from the project root:
+The exported data is already in `data/`. To regenerate it, install the Bioconductor packages `ALL`, `genefilter` and `hgu95av2.db`, then run `Rscript src/export_all.R` and `Rscript src/export_filter.R` (details in [data/README.md](data/README.md)).
 
-   ```
-   Rscript src/export_all.R
-   Rscript src/export_filter.R
-   ```
+Run the notebooks in order:
 
-   Details and package versions are in [data/README.md](data/README.md).
-
-3. Run the notebooks in `notebooks/` in numeric order (from the `notebooks/` folder, or with `jupyter nbconvert --to notebook --execute --inplace <notebook>`):
-
-   | Notebook | Content | Run time |
-   | --- | --- | --- |
-   | `01_data_check.ipynb` | Shape, class counts and value range against the book | seconds |
-   | `02_baseline.ipynb` | Baseline: 24 workflows, 100 rounds, selection inside every round | about 13 min |
-   | `03_leakage_extension.ipynb` | Extension: selection fitted outside the evaluation loop | about 13 min |
-   | `04_label_shuffle.ipynb` | Control: shuffled labels, selection inside and outside | about 12 min |
-   | `05_b1_confound.ipynb` | Check of the B-cell stage confound for ALL1/AF4 | about 7 min |
-
-   Notebook 03 reads the scores written by notebook 02, and notebook 04 reuses its saved scores if they exist. Reusable code is in `src/pipeline.py`. Figures and score tables are written to `results/`.
-
-## Method in brief
-
-Per round of repeated stratified resampling (100 rounds, 30% of patients held out, seed 0), using the training patients only: ANOVA filter (p < 0.01) on the 4,025 probes left by the label-free first filter, then either all ANOVA genes (s1) or the 30 genes with the highest random-forest importance (s2). Random forest (2 settings), SVM (4 settings, standardised) and k-NN (k = 3, 5, 7; z-score or median/IQR scaling) are fitted and scored on the held-out patients: 24 workflows in total. Accuracy, balanced accuracy, per-class recall and the confusion matrix are reported.
-
-## Results summary
-
-All values are means over the rounds, computed in the notebooks. The always-NEG accuracy is 0.447.
-
-| Result | Value | Notebook |
+| Notebook | Content | Run time |
 | --- | --- | --- |
-| Best accuracy (selection inside the loop) | 0.852, `s2_knn3_z` (balanced accuracy 0.847) | 02 |
-| Best balanced accuracy | 0.885, `s1_knn3_iqr` (accuracy 0.834, E2A/PBX1 recall 0.95) | 02 |
-| E2A/PBX1 recall of the best-accuracy workflow | 0.695 | 02 |
-| Best workflow with selection outside the loop | 0.928, `s2_knn5_z` (0.839 inside) | 03 |
-| Mean accuracy gain from selecting outside the loop, 24 workflows | +0.039 (+0.063 for s2, +0.014 for s1) | 03 |
-| Shuffled labels, selection inside: mean accuracy, best workflow | 0.380, 0.448 | 04 |
-| Shuffled labels, selection outside: mean accuracy, best workflow | 0.502, 0.578 | 04 |
-| ALL1/AF4 against NEG within stage B1 only (18 patients) | accuracy 0.960 (`s2_knn3_z`), larger class 0.556 | 05 |
-| Stage prediction from genes: balanced accuracy, five stages / B1 against rest | 0.420 (chance 0.20) / 0.774 (chance 0.50) | 05 |
-
-Main findings: the workflow ranking follows the book (k-NN and the better SVM settings lead, no random forest in the top 10, 30-gene selection mostly ahead of all genes); accuracy and balanced accuracy rank workflows differently because of the five-patient E2A/PBX1 class; selecting genes outside the loop inflates accuracy, and the shuffled-label control shows that selection inside the loop does not.
-
-## Differences from the book
-
-- Resampling is repeated stratified hold-out (30%), not the bootstrap, so accuracies are not directly comparable. The ranking pattern is what is compared.
-- The first filter keeps 4,025 probes (book: 3,943) and ANOVA keeps 751 (book: 746), because the current annotation package maps more probes.
-- The random-forest ranking uses impurity importance; the book uses permutation importance.
-- 24 workflows instead of 54: the clustering ensemble (s3) is not reproduced, the SVM grid has four of six settings and the random-forest grid has two of six.
-- Paired p-values are optimistic because the rounds share training patients.
+| `01_data_check` | Shape, class counts and value range against the book | seconds |
+| `02_baseline` | 24 workflows, 100 rounds, selection inside every round | about 13 min |
+| `03_leakage_extension` | Selection fitted outside the evaluation loop | about 13 min |
+| `04_label_shuffle` | Shuffled-label control | about 12 min |
+| `05_b1_confound` | Cell-stage check for ALL1/AF4 | about 7 min |
 
 ## Project page
 
-`docs/site/index.html` is a single-page write-up of the whole project: question, data, method, results, the leakage experiment, the shuffled-label check, the cell-stage check, limits and reproduction steps. Every number on it is read from `docs/site/assets/data.js`, which `python src/build_site_data.py` builds from `results/` and `data/`; rerun that script after rerunning the notebooks.
+`docs/site/index.html` needs no server and no internet connection. Every number on it comes from `docs/site/assets/data.js`; after rerunning the notebooks, refresh it with `python src/build_site_data.py`.
 
-**Open it locally.** Open `docs/site/index.html` in any web browser (double-click the file). It needs no server and no internet connection.
+To publish it, open the repository's Settings, then Pages, choose "Deploy from a branch", select the `main` branch and the `/docs` folder, and save. The page is then served at `https://<account>.github.io/<repository>/` (the root redirects to `/site/`).
 
-**Publish it with GitHub Pages.** In the repository on GitHub, open Settings, then Pages. Under Build and deployment choose "Deploy from a branch", select the `main` branch and the `/docs` folder, and save. After a minute or two the page is available at `https://<account>.github.io/<repository>/site/`.
+## Differences from the book
 
-## Status
+- Resampling is repeated stratified hold-out (30% per round) instead of the bootstrap, so accuracies are not directly comparable. The ranking pattern is what is compared.
+- The first filter keeps 4,025 genes (book: 3,943) and ANOVA keeps 751 (book: 746), because the current annotation package maps more probes.
+- The 30-gene ranking uses impurity importance, where the book uses permutation importance.
+- 24 workflows instead of 54: the clustering ensemble is not reproduced, and the SVM and random-forest grids are smaller.
 
-Complete: data export and check, baseline, extension, label-shuffle control and stage-confound check.
+## Limits
+
+94 patients, one seed, one resampling scheme, and a five-patient class whose recall is coarse. Paired significance tests are optimistic because rounds share training patients. This is a learning exercise and not a medical tool.
 
 ## Reference
 
-Torgo, L. (2017). *Data Mining with R: Learning with Case Studies* (2nd ed.). CRC Press. Chapter 7, pp. 353-381.
-Original data: Chiaretti et al. (2004), via the Bioconductor `ALL` package.
+- Torgo, L. (2017). *Data Mining with R: Learning with Case Studies* (2nd ed.). CRC Press. Chapter 7, pp. 353-381.
+- Chiaretti, S., et al. (2004). Gene expression profile of adult T-cell acute lymphocytic leukemia identifies distinct subsets of patients with different response to therapy and survival. *Blood*, 103(7), 2771-2778. Data via the Bioconductor `ALL` package.

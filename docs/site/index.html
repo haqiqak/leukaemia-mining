@@ -5,37 +5,62 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Leukaemia Mining</title>
 <meta name="description" content="A Python reproduction and extension of a leukaemia gene-expression classification case study.">
+<script>document.documentElement.classList.add('js');</script>
 <style>
 :root {
-  --bg: #fbf7ec; --card: #fffdf6; --ink: #23262b; --muted: #5d6470; --head: #1f4e8c;
-  --line: #e3dcc8; --bar: #b4c8e4; --bar-hl: #4c72b0; --warn: #b5532f;
+  --bg: #fbf7ec; --card: #fffdf6; --ink: #23262b; --muted: #5d6470; --head: #1f4e8c; --navy: #14305a;
+  --line: #e3dcc8; --blue: #4c72b0; --bar: #b4c8e4; --orange: #d9822b; --warn: #b5532f; --shadow: 0 1px 3px rgba(20,48,90,.08);
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.65 Arial, Helvetica, sans-serif; }
-nav { position: sticky; top: 0; z-index: 10; background: var(--card); border-bottom: 1px solid var(--line);
-      overflow-x: auto; white-space: nowrap; padding: 0 16px; }
+
+/* navigation and progress */
+nav { position: sticky; top: 0; z-index: 10; background: rgba(255,253,246,.96); border-bottom: 1px solid var(--line);
+      overflow-x: auto; white-space: nowrap; padding: 0 16px; box-shadow: var(--shadow); }
 nav a { display: inline-block; padding: 12px 10px; color: var(--head); text-decoration: none; font-size: 14px; }
-nav a:hover, nav a.on { color: var(--ink); box-shadow: inset 0 -3px var(--head); }
-main { max-width: 780px; margin: 0 auto; padding: 24px 16px 64px; }
-h1 { color: var(--head); font-size: 2.2rem; line-height: 1.2; margin: 24px 0 8px; }
-h2 { color: var(--head); font-size: 1.55rem; line-height: 1.3; margin: 56px 0 12px; scroll-margin-top: 64px; }
+nav a:hover { color: var(--ink); }
+nav a.on { color: var(--ink); font-weight: bold; box-shadow: inset 0 -3px var(--orange); }
+#progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; background: var(--orange); z-index: 20; }
+
+/* hero */
+.hero { background: linear-gradient(135deg, var(--navy), #2a5fa3); color: #fff; padding: 56px 16px 64px; }
+.hero-in { max-width: 780px; margin: 0 auto; }
+.kicker { text-transform: uppercase; letter-spacing: .14em; font-size: .78rem; color: #f2c58f; margin: 0 0 10px; }
+.hero h1 { font-size: 3rem; line-height: 1.1; margin: 0 0 14px; }
+.hero p.lede { font-size: 1.15rem; color: #dbe6f6; margin: 0 0 22px; max-width: 640px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 30px; }
+.chip { border: 1px solid rgba(255,255,255,.35); border-radius: 999px; padding: 3px 12px; font-size: .82rem; color: #eaf1fb; }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.tile { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 8px; padding: 14px 14px 12px; }
+.tile .v { font-size: 2rem; font-weight: bold; line-height: 1.1; }
+.tile .l { font-size: .82rem; color: #cddcf1; margin-top: 4px; line-height: 1.35; }
+
+main { max-width: 780px; margin: 0 auto; padding: 8px 16px 64px; }
+section { padding-top: 8px; }
+h2 { color: var(--head); font-size: 1.55rem; line-height: 1.3; margin: 56px 0 14px; scroll-margin-top: 64px; display: flex; gap: 12px; align-items: baseline; }
+h2 .num { flex: none; background: var(--head); color: #fff; font-size: .85rem; border-radius: 50%; width: 30px; height: 30px;
+          display: inline-flex; align-items: center; justify-content: center; transform: translateY(-2px); }
 h3 { color: var(--head); font-size: 1.1rem; margin: 28px 0 8px; }
-.lede { color: var(--muted); font-size: 1.15rem; margin: 0 0 24px; }
-.box { background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--head);
-       border-radius: 4px; padding: 16px 20px; margin: 20px 0; }
+.box { background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--head); border-radius: 4px;
+       padding: 16px 20px; margin: 20px 0; box-shadow: var(--shadow); }
 .box h3 { margin-top: 0; }
 .box ul { margin: 8px 0 0; padding-left: 20px; }
-.note { border-left-color: var(--warn); }
+.box.note { border-left-color: var(--warn); }
+.key { background: #eef3fb; border: 1px solid #cfdcf0; border-radius: 6px; padding: 12px 16px; margin: 0 0 20px; color: var(--navy); }
+.key b { text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; color: var(--head); margin-right: 8px; }
 code { background: #f1ebd9; padding: 1px 5px; border-radius: 3px; font-size: .88em; }
-pre { background: #f1ebd9; padding: 14px 16px; border-radius: 4px; overflow-x: auto; font-size: .85rem; line-height: 1.5; }
+pre { background: #14305a; color: #e8eefb; padding: 14px 16px; border-radius: 6px; overflow-x: auto; font-size: .85rem; line-height: 1.5; }
 pre code { background: none; padding: 0; }
 figure { margin: 24px 0; }
 figure img { width: 100%; height: auto; border: 1px solid var(--line); background: #fff; border-radius: 4px; }
 figcaption { color: var(--muted); font-size: .9rem; margin-top: 6px; }
-.tw { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 4px; background: var(--card); }
+
+/* tables */
+.tw { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 6px; background: var(--card); box-shadow: var(--shadow); }
 table { border-collapse: collapse; width: 100%; font-size: .9rem; }
 th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
 th:first-child, td:first-child { text-align: left; }
 th { background: #f4eedb; font-weight: bold; }
 th button { all: inherit; cursor: pointer; font-weight: bold; padding: 0; }
@@ -45,27 +70,68 @@ th[aria-sort="descending"] button::after { content: " \25BC"; font-size: .7em; }
 td.wrap, th.wrap { white-space: normal; text-align: left; }
 td.bar { background: linear-gradient(90deg, var(--bar) var(--w), transparent var(--w)); }
 td.bar.hl { background: linear-gradient(90deg, #86a8d8 var(--w), transparent var(--w)); font-weight: bold; }
+td.neg { color: var(--warn); }
 #wf-table { font-size: .82rem; }
 #wf-table th, #wf-table td { padding: 6px 8px; }
 #stage-result th, #stage-result td { white-space: normal; }
 #stage-result th:last-child, #stage-result td:last-child { text-align: left; }
-figure.narrow img { max-width: 520px; display: block; margin: 0 auto; }
-td.neg { color: var(--warn); }
-.switch { display: inline-flex; border: 1px solid var(--head); border-radius: 4px; overflow: hidden; margin: 8px 0; }
-.switch button { font: inherit; font-size: .9rem; padding: 7px 14px; border: 0; background: var(--card); color: var(--head); cursor: pointer; }
+.switch { display: inline-flex; border: 1px solid var(--head); border-radius: 6px; overflow: hidden; margin: 8px 0; }
+.switch button { font: inherit; font-size: .9rem; padding: 7px 16px; border: 0; background: var(--card); color: var(--head); cursor: pointer; }
 .switch button[aria-pressed="true"] { background: var(--head); color: #fff; }
-.steps { display: flex; flex-direction: column; gap: 0; margin: 20px 0; }
-.step { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 10px 14px; position: relative; }
+
+/* charts */
+.chart { overflow-x: auto; margin: 16px 0; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 10px 6px 4px; box-shadow: var(--shadow); }
+.chart svg { display: block; width: 100%; min-width: 620px; height: auto; }
+.chart .lab { font: 11px/1 Consolas, monospace; fill: var(--ink); }
+.chart .tick { font: 11px Arial, sans-serif; fill: var(--muted); }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .link { stroke: #b9c6dc; stroke-width: 3; stroke-linecap: round; }
+.chart .ref { stroke: var(--warn); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.chart .reflab { font: 11px Arial, sans-serif; fill: var(--warn); }
+.chart .leg { font: 12px Arial, sans-serif; fill: var(--ink); }
+.hb { display: grid; grid-template-columns: 150px 1fr 70px; gap: 10px; align-items: center; margin: 8px 0; font-size: .92rem; }
+.hb .track { position: relative; height: 18px; background: #efe9d6; border-radius: 9px; }
+.hb .fill { height: 100%; border-radius: 9px; background: var(--blue); }
+.hb .fill.out { background: var(--orange); }
+.hb .mark { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dashed var(--warn); }
+.hb .val { text-align: right; font-weight: bold; }
+.hb-note { color: var(--warn); font-size: .82rem; margin: 2px 0 0 160px; }
+.heat td { text-align: center; min-width: 78px; }
+.heat td:first-child { text-align: left; font-weight: bold; }
+.heat small { display: block; font-size: .72rem; opacity: .85; }
+
+/* original approach diagram */
+.steps { margin: 20px 0; counter-reset: s; }
+.step { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: start; background: var(--card); border: 1px solid var(--line);
+        border-radius: 6px; padding: 10px 14px; box-shadow: var(--shadow); position: relative; counter-increment: s; }
 .step + .step { margin-top: 22px; }
-.step + .step::before { content: "\2193"; position: absolute; top: -21px; left: 50%; color: var(--head); font-size: 1.2rem; }
+.step + .step::before { content: "\2193"; position: absolute; top: -21px; left: 31px; color: var(--head); font-size: 1.2rem; }
+.step::after { content: counter(s); grid-column: 1; grid-row: 1; width: 30px; height: 30px; border-radius: 50%; background: #eef3fb; color: var(--head);
+               display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: .85rem; }
+.step > div { grid-column: 2; grid-row: 1; }
+.step .n { grid-column: 3; grid-row: 1; background: var(--navy); color: #fff; font-size: .8rem; border-radius: 999px; padding: 2px 11px; white-space: nowrap; }
 .step b { color: var(--head); }
-.step .n { float: right; color: var(--muted); font-size: .9rem; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 640px) { .two { grid-template-columns: 1fr; } h1 { font-size: 1.8rem; } body { font-size: 16px; } }
+.two .box { margin: 0; }
 footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1px solid var(--line); padding-top: 12px; }
+
+/* motion */
+.js .rv { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
+.js .rv.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .js .rv { opacity: 1; transform: none; transition: none; } }
+@media print { .js .rv { opacity: 1; transform: none; } nav, #progress { display: none; } }
+@media (max-width: 640px) {
+  body { font-size: 16px; }
+  .hero { padding: 40px 16px 44px; } .hero h1 { font-size: 2.2rem; }
+  .tiles { grid-template-columns: 1fr 1fr; } .tile .v { font-size: 1.6rem; }
+  .two { grid-template-columns: 1fr; }
+  .hb { grid-template-columns: 110px 1fr 56px; } .hb-note { margin-left: 120px; }
+  .step { grid-template-columns: 34px 1fr; } .step .n { grid-column: 2; grid-row: 2; justify-self: start; }
+}
 </style>
 </head>
 <body>
+<div id="progress"></div>
 <nav id="toc" aria-label="Contents">
   <a href="#question">Question</a><a href="#data">Data</a><a href="#hard">Why hard</a><a href="#original">Original</a>
   <a href="#reproduction">Reproduction</a><a href="#results">Results</a><a href="#leakage">Leakage</a>
@@ -73,11 +139,23 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
   <a href="#reproduce">Reproduce</a><a href="#reference">Reference</a>
 </nav>
 
-<main>
-<h1>Leukaemia Mining</h1>
-<p class="lede">Can the activity of thousands of genes tell leukaemia subtypes apart? A Python reproduction and extension of a classic microarray case study, with a closer look at how easily such results become too good to be true.</p>
+<header class="hero">
+  <div class="hero-in">
+    <p class="kicker">Data mining case study</p>
+    <h1>Leukaemia Mining</h1>
+    <p class="lede">Can the activity of thousands of genes tell leukaemia subtypes apart? A Python reproduction and extension of a classic microarray case study, with a closer look at how easily such results become too good to be true.</p>
+    <div class="chips"><span class="chip">Gene expression</span><span class="chip">Classification</span><span class="chip">Python and scikit-learn</span><span class="chip">Data leakage</span></div>
+    <div class="tiles">
+      <div class="tile"><div class="v" data-k="data.patients" data-f="i"></div><div class="l">B-cell patients</div></div>
+      <div class="tile"><div class="v" data-k="data.genes" data-f="i"></div><div class="l">gene measurements per patient</div></div>
+      <div class="tile"><div class="v" data-k="summary.best_acc.accuracy" data-f="3"></div><div class="l">best accuracy of 24 workflows (guessing: <span data-k="data.always_neg" data-f="3"></span>)</div></div>
+      <div class="tile"><div class="v" data-k="summary.leak.mean_gap" data-f="s3"></div><div class="l">average accuracy inflation from leaky gene selection</div></div>
+    </div>
+  </div>
+</header>
 
-<div class="box">
+<main>
+<div class="box rv">
   <h3>Summary</h3>
   <ul>
     <li><b>Task:</b> name one of four leukaemia classes for <span data-k="data.patients" data-f="i"></span> patients from <span data-k="data.genes" data-f="i"></span> gene measurements each.</li>
@@ -88,10 +166,10 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
   </ul>
 </div>
 
-<h2 id="question">1. The question: telling subtypes apart from gene activity</h2>
+<section id="question" class="rv">
+<h2><span class="num">1</span>The question: telling subtypes apart from gene activity</h2>
 <p>Acute lymphoblastic leukaemia (ALL) is a fast-developing blood cancer in which immature white blood cells multiply uncontrollably. It is not a single disease. It comes in subtypes, and each is linked to a different genetic change. The subtype matters because different subtypes behave differently and can call for different treatment. That clinical background is general knowledge rather than something the case study examines.</p>
 <p>A laboratory chip called a microarray can measure how active thousands of genes are in a patient's sample, giving one number per gene. The case study's central hypothesis is that each subtype leaves a recognisable pattern in those numbers. If so, a computer should be able to look at the numbers and name the subtype. The interesting part is how reliably this can be shown with only a few dozen patients.</p>
-
 <h3>Terms used on this page</h3>
 <div class="tw"><table>
   <tr><th>Term</th><th class="wrap">Plain meaning</th></tr>
@@ -103,7 +181,6 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
   <tr><td>Translocation</td><td class="wrap">Two chromosomes swap pieces. The swap can fuse two genes into a new one and change which genes are busy.</td></tr>
   <tr><td>Subtype</td><td class="wrap">A named category of the same disease. Here each subtype is named after the genes involved in the swap.</td></tr>
 </table></div>
-
 <h3>The four classes</h3>
 <div class="tw"><table>
   <tr><th>Class</th><th class="wrap">Meaning</th></tr>
@@ -112,10 +189,12 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
   <tr><td>E2A/PBX1</td><td class="wrap">The genes E2A and PBX1 are fused.</td></tr>
   <tr><td>NEG</td><td class="wrap">"Negative": tests found none of these abnormalities.</td></tr>
 </table></div>
+</section>
 
-<h2 id="data">2. The data</h2>
+<section id="data" class="rv">
+<h2><span class="num">2</span>The data</h2>
 <p>The data come from a published study of ALL (Chiaretti et al., 2004), distributed with the Bioconductor project as the <code>ALL</code> package. The case study keeps the <span data-k="data.patients"></span> B-cell patients whose class is one of the four above. Each patient is a row; each of the <span data-k="data.genes" data-f="i"></span> gene measurements is a column; one more column holds the class, determined by laboratory tests.</p>
-<div class="tw"><table id="class-table"></table></div>
+<div id="class-bars" class="box" style="border-left-color: var(--blue)"></div>
 <p>The classes are very uneven. The smallest, E2A/PBX1, has five patients. Always answering NEG would be right for <span data-k="data.always_neg" data-f="p1"></span> of the patients, so any model has to clearly beat that figure.</p>
 <figure>
   <img src="assets/data_check.png" alt="Bar chart of patients per class and box plots of expression values for each class">
@@ -123,29 +202,35 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
 </figure>
 <h3>Why the small class matters</h3>
 <p>Five patients are thin evidence. With a 30% hold-out for testing, each round contains only one or two E2A/PBX1 patients, so recall for this class is very coarse in a single round and only meaningful as an average over many rounds. Overall accuracy can also look fine while the class is almost always wrong, because it is only about 5% of the patients. This is why the project reports balanced accuracy and per-class recall next to accuracy.</p>
+</section>
 
-<h2 id="hard">3. Why this is hard</h2>
+<section id="hard" class="rv">
+<h2><span class="num">3</span>Why this is hard</h2>
 <div class="two">
   <div class="box"><h3>More columns than rows</h3><p>There are <span data-k="data.genes" data-f="i"></span> gene columns for <span data-k="data.patients"></span> patients. Some genes look predictive purely by luck, and a model can latch onto them: excellent on the patients it studied, poor on new ones. This is overfitting.</p></div>
   <div class="box"><h3>Noise and irrelevant genes</h3><p>Most genes barely change between patients, and some probes on the chip are laboratory controls. They add noise and no information.</p></div>
   <div class="box"><h3>Uneven classes</h3><p>One class has five patients. Accuracy rewards getting the large classes right and hardly notices failure on the small one.</p></div>
   <div class="box note"><h3>Leakage</h3><p>If the class labels are used to pick the best genes using <i>all</i> patients, and the model is then tested on those same patients, the test patients have already shaped the choice. The reported accuracy is then too good to be true. Avoiding this is the central methodological point of the case study, and the extension below measures how large the effect is.</p></div>
 </div>
+</section>
 
-<h2 id="original">4. The original approach</h2>
+<section id="original" class="rv">
+<h2><span class="num">4</span>The original approach</h2>
 <p>The case study (Torgo, <i>Data Mining with R</i>, Chapter 7) works in the R language. Its focus is feature selection: shrinking thousands of genes to a number a model can handle. The workflow is as follows.</p>
 <div class="steps">
-  <div class="step"><span class="n"><span data-k="data.genes" data-f="i"></span> genes</span><b>Start:</b> the expression table for the B-cell patients.</div>
-  <div class="step"><span class="n">to <span data-k="book.first_filter" data-f="i"></span></span><b>First filter, no labels:</b> remove control probes, duplicate probes, probes without a gene identifier and probes that hardly vary. Done once.</div>
-  <div class="step"><span class="n">to <span data-k="book.anova" data-f="i"></span></span><b>ANOVA filter, uses labels:</b> keep genes whose average expression differs between the classes (significance level 0.01). Redone inside every evaluation round.</div>
-  <div class="step"><span class="n">to <span data-k="book.top_genes"></span> genes</span><b>Optional cut:</b> keep the top <span data-k="book.top_genes"></span> genes by random-forest importance, or build an ensemble of <span data-k="book.ensemble_members"></span> models that each use one random gene from each of <span data-k="book.clusters"></span> gene clusters.</div>
-  <div class="step"><b>Classifiers:</b> random forest, support vector machine (SVM) and k-nearest neighbours (k-NN), each with a few settings.</div>
-  <div class="step"><span class="n"><span data-k="book.rounds"></span> rounds</span><b>Evaluation:</b> bootstrap resampling, with all label-using steps redone on each round's training patients only. Measure: accuracy.</div>
+  <div class="step"><div><b>Start:</b> the expression table for the B-cell patients.</div><span class="n"><span data-k="data.genes" data-f="i"></span> genes</span></div>
+  <div class="step"><div><b>First filter, no labels:</b> remove control probes, duplicate probes, probes without a gene identifier and probes that hardly vary. Done once.</div><span class="n"><span data-k="book.first_filter" data-f="i"></span> genes</span></div>
+  <div class="step"><div><b>ANOVA filter, uses labels:</b> keep genes whose average expression differs between the classes (significance level 0.01). Redone inside every evaluation round.</div><span class="n"><span data-k="book.anova" data-f="i"></span> genes</span></div>
+  <div class="step"><div><b>Optional cut:</b> keep the top <span data-k="book.top_genes"></span> genes by random-forest importance, or build an ensemble of <span data-k="book.ensemble_members"></span> models that each use one random gene from each of <span data-k="book.clusters"></span> gene clusters.</div><span class="n"><span data-k="book.top_genes"></span> genes</span></div>
+  <div class="step"><div><b>Classifiers:</b> random forest, support vector machine (SVM) and k-nearest neighbours (k-NN), each with a few settings.</div><span class="n">3 models</span></div>
+  <div class="step"><div><b>Evaluation:</b> bootstrap resampling, with all label-using steps redone on each round's training patients only. Measure: accuracy.</div><span class="n"><span data-k="book.rounds"></span> rounds</span></div>
 </div>
 <p>The three classifiers in one line each: a <b>random forest</b> averages many decision trees that each see random subsets of genes; an <b>SVM</b> finds a boundary between classes, here with a curved (RBF) kernel; <b>k-NN</b> stores the training patients and labels a new patient by a vote among the k most similar ones, so it needs genes on a common scale.</p>
 <p>The case study compares <span data-k="book.workflows"></span> workflows (18 classifier settings times 3 gene-selection strategies). Its best result is about <span data-k="book.best_accuracy" data-f="2"></span> accuracy, from an SVM on the 30 random-forest genes. No random-forest variant appears in its top ten, and the top ten are not significantly different from one another.</p>
+</section>
 
-<h2 id="reproduction">5. The reproduction in Python</h2>
+<section id="reproduction" class="rv">
+<h2><span class="num">5</span>The reproduction in Python</h2>
 <p>The aim is to reproduce the workflow, not the R code, and to compare which setups do well rather than exact decimals. Results will not match the book exactly because the language, the random draws and the library defaults differ.</p>
 <div class="tw"><table>
   <tr><th>Aspect</th><th class="wrap">Book</th><th class="wrap">This project</th><th class="wrap">Why</th></tr>
@@ -157,18 +242,19 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
   <tr><td>Measures</td><td class="wrap">Accuracy</td><td class="wrap">Accuracy, balanced accuracy, per-class recall, confusion matrix</td><td class="wrap">Class sizes differ greatly.</td></tr>
 </table></div>
 <p>Kept as in the book: the three classifiers, the ANOVA filter inside every round, the 30-gene random-forest strategy, and accuracy as the headline measure. Added beyond the book: the extra measures, the leakage experiment, the shuffled-label check and the cell-stage check described below.</p>
+</section>
 
-<h2 id="results">6. Results: 24 workflows, two metrics</h2>
-<p>Each row is one workflow: a gene-selection strategy (<code>s1</code> all ANOVA genes, <code>s2</code> random-forest top 30) followed by a model. Values are means over <span data-k="summary.rounds"></span> rounds, with all selection done inside each round. The last four columns give recall for each class. Click a column header to sort. The switch picks which metric is highlighted and sorted. <i>Shift</i> is the rank by accuracy minus the rank by balanced accuracy: a positive value means the workflow looks better when each class counts equally.</p>
+<section id="results" class="rv">
+<h2><span class="num">6</span>Results: 24 workflows, two metrics</h2>
+<p class="key"><b>Key point</b>k-NN and the better SVMs lead, and the metric changes the winner: <code data-k="summary.best_acc.name"></code> is first on accuracy, <code data-k="summary.best_bal.name"></code> is first on balanced accuracy.</p>
+<p>Each workflow is a gene-selection strategy (<code>s1</code> all ANOVA genes, <code>s2</code> random-forest top 30) followed by a model. Values are means over <span data-k="summary.rounds"></span> rounds, with all selection done inside each round. In the chart, each row joins a workflow's accuracy (blue) to its balanced accuracy (orange); long links mark workflows whose accuracy hides weak recall on the small class.</p>
+<div class="chart" id="metric-chart"></div>
+<p>The table has the same numbers and the recall of each class. The last four columns give recall for each class. Click a column header to sort. The switch picks which metric is highlighted and sorted. <i>Shift</i> is the rank by accuracy minus the rank by balanced accuracy: a positive value means the workflow looks better when each class counts equally.</p>
 <div class="switch">
   <button id="m-acc" aria-pressed="true">Accuracy</button><button id="m-bal" aria-pressed="false">Balanced accuracy</button>
 </div>
 <div class="tw"><table id="wf-table"></table></div>
-<figure>
-  <img src="assets/baseline_accuracy.png" alt="Bar chart of accuracy for all 24 workflows with balanced accuracy as dots">
-  <figcaption>Accuracy (bars, with standard deviation over rounds) and balanced accuracy (dots) for all workflows. The dashed line is the always-NEG rate.</figcaption>
-</figure>
-<h3>What the table shows</h3>
+<h3>What the results show</h3>
 <ul>
   <li><b>Ranking pattern.</b> k-NN and the better SVM settings lead, and no random-forest workflow is in the top ten: the best, <code data-k="summary.rf_best.name"></code>, ranks <span data-k="summary.rf_best.rank"></span> with <span data-k="summary.rf_best.accuracy" data-f="3"></span>. This matches the book. Mean accuracy by family is <span data-k="summary.family_accuracy.knn" data-f="3"></span> for k-NN, <span data-k="summary.family_accuracy.rf" data-f="3"></span> for random forest and <span data-k="summary.family_accuracy.svm" data-f="3"></span> for SVM; the SVM average is pulled down by two failing settings.</li>
   <li><b>The metric changes the winner.</b> <code data-k="summary.best_acc.name"></code> is first by accuracy (<span data-k="summary.best_acc.accuracy" data-f="3"></span>, E2A/PBX1 recall <span data-k="summary.best_acc.E2A/PBX1" data-f="2"></span>). <code data-k="summary.best_bal.name"></code> is first by balanced accuracy (<span data-k="summary.best_bal.balanced_accuracy" data-f="3"></span>) with E2A/PBX1 recall <span data-k="summary.best_bal.E2A/PBX1" data-f="2"></span>, but lower accuracy (<span data-k="summary.best_bal.accuracy" data-f="3"></span>) because it makes more mistakes on NEG.</li>
@@ -176,13 +262,16 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
   <li><b>Two SVMs fail.</b> <code data-k="summary.svm_failing.0.name"></code> (<span data-k="summary.svm_failing.0.accuracy" data-f="3"></span>) and <code data-k="summary.svm_failing.1.name"></code> (<span data-k="summary.svm_failing.1.accuracy" data-f="3"></span>) predict almost only NEG. The curved kernel compares patients by squared distance; with hundreds of standardised genes that distance is large, so the kernel value with gamma 0.01 is close to zero for every pair, nothing generalises, and the model falls back to the biggest class. The same gamma works with 30 genes. SVMs are sensitive to both gamma and the number of genes.</li>
   <li><b>Differences between top workflows are small.</b> The paired tests flag <span data-k="summary.top10_p_below_005"></span> of the other <span data-k="summary.top10_others"></span> top-ten workflows as different from the best at the 5% level, unlike the book. The rounds share training patients, so these p-values are optimistic and small gaps should not be treated as established.</li>
 </ul>
-<figure class="narrow">
-  <img src="assets/baseline_confusion.png" alt="Confusion matrix of the best-accuracy workflow summed over all rounds">
-  <figcaption>Confusion matrix of the best-accuracy workflow, summed over all rounds. Rows are true classes, columns are predictions.</figcaption>
-</figure>
+<h3>Where the best workflow makes its mistakes</h3>
+<p>The confusion matrix for <code data-k="confusion.name"></code>, summed over all rounds. Each cell shows a count and the share of the true class; the diagonal is recall.</p>
+<div class="tw"><table class="heat" id="conf-table"></table></div>
+</section>
 
-<h2 id="leakage">7. The leakage experiment: selecting genes inside or outside the loop</h2>
+<section id="leakage" class="rv">
+<h2><span class="num">7</span>The leakage experiment: selecting genes inside or outside the loop</h2>
+<p class="key"><b>Key point</b>Choosing genes before splitting the patients makes results look better than they are: <span data-k="summary.leak.mean_gap" data-f="s3"></span> accuracy on average, up to <span data-k="summary.leak.max_gap" data-f="s3"></span>.</p>
 <p>The extension changes one thing. In the baseline, the ANOVA filter and the random-forest ranking are fitted on each round's training patients only. In the leaky version, the same selection is fitted once on all patients before the data are split, so every test patient has already influenced which genes are used. The splits, models and seeds are identical, so the two runs can be compared round by round.</p>
+<div class="chart" id="leak-chart"></div>
 <div class="box">
   <h3>Result</h3>
   <ul>
@@ -192,14 +281,14 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
   </ul>
 </div>
 <div class="tw"><table id="leak-table"></table></div>
-<figure>
-  <img src="assets/leakage_accuracy.png" alt="Paired bar chart of accuracy for each workflow with selection inside and outside the loop">
-  <figcaption>Accuracy of each workflow with selection inside the loop (honest) and outside the loop (leaky).</figcaption>
-</figure>
 <p><b>Why s2 is hit harder.</b> Picking 30 genes out of several hundred by importance leaves much more room to fit the labels, including the test patients' labels, than keeping every gene that passes a significance test. The more aggressive the selection, the larger the inflation. The exceptions at the bottom of the table are the two failing SVMs, whose scores move with the gene set rather than with any real signal.</p>
+</section>
 
-<h2 id="shuffle">8. The sanity check: shuffled labels</h2>
+<section id="shuffle" class="rv">
+<h2><span class="num">8</span>The sanity check: shuffled labels</h2>
+<p class="key"><b>Key point</b>With no signal to find, the honest pipeline scores at the guess-the-biggest-class level. The leaky one does not.</p>
 <p>A high accuracy proves little unless the pipeline is known not to invent results. In this check the class labels are randomly permuted once, which removes any real link between genes and classes while keeping the class counts, so the always-NEG rate stays <span data-k="data.always_neg" data-f="3"></span>. Chance balanced accuracy for four classes is 0.25. Each run uses <span data-k="summary.shuffle.rounds"></span> rounds.</p>
+<div id="shuffle-bars" class="box" style="border-left-color: var(--orange)"></div>
 <div class="tw"><table id="shuffle-table"></table></div>
 <h3>What it proves</h3>
 <ul>
@@ -208,8 +297,11 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
 </ul>
 <h3>What it does not prove</h3>
 <p>It uses one shuffle and 50 rounds, so the figures are indicative. It shows that the pipeline does not leak in this way; it does not show that the real accuracy is free of every other bias, such as the cell-stage question below.</p>
+</section>
 
-<h2 id="stage">9. The cell-stage check</h2>
+<section id="stage" class="rv">
+<h2><span class="num">9</span>The cell-stage check</h2>
+<p class="key"><b>Key point</b>Stage is not the whole story: the classifier still separates ALL1/AF4 from NEG within a single stage.</p>
 <p>B-cell leukaemia samples are recorded with a stage label (B, B1 to B4). The table shows classes against stages. All ALL1/AF4 patients are in stage B1, and no other stage contains any. A classifier could therefore separate ALL1/AF4 by recognising the cell stage rather than the genetic subtype.</p>
 <div class="tw"><table id="stage-table"></table></div>
 <p>Two tests address this, using the best-accuracy workflow and the same resampling as the baseline.</p>
@@ -225,8 +317,10 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
   <li>It rests on <span data-k="summary.b1_within.patients"></span> patients, with five or six in each test set. The single BCR/ABL patient in stage B1 is left out because one patient cannot be split between training and test, so only ALL1/AF4 against NEG is tested. BCR/ABL and E2A/PBX1 are not checked for a stage confound.</li>
   <li>It removes the stage explanation only. The two classes may differ in other ways, such as age or sample handling.</li>
 </ul>
+</section>
 
-<h2 id="meaning">10. What this means, and the limits</h2>
+<section id="meaning" class="rv">
+<h2><span class="num">10</span>What this means, and the limits</h2>
 <p>Gene activity does carry enough information to separate these leukaemia subtypes better than guessing, and the ranking of methods follows the original case study. The more transferable lesson concerns evaluation: the way genes are selected can change the reported accuracy by several points, the best model depends on the metric, and a shuffled-label control is a cheap way to check a pipeline.</p>
 <div class="box note">
   <h3>Limits</h3>
@@ -239,8 +333,10 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
     <li><b>Not a medical tool.</b> This is a learning exercise on one small dataset and must not be used for diagnosis.</li>
   </ul>
 </div>
+</section>
 
-<h2 id="reproduce">11. How to reproduce</h2>
+<section id="reproduce" class="rv">
+<h2><span class="num">11</span>How to reproduce</h2>
 <p>The exported data and all results are included in the repository, so the notebooks can be run without R. The R steps regenerate the data files.</p>
 <pre><code>git clone &lt;repository-url&gt;
 cd &lt;project-folder&gt;
@@ -258,13 +354,16 @@ for n in notebooks/0*.ipynb; do jupyter nbconvert --to notebook --execute --inpl
 # refresh the numbers on this page
 python src/build_site_data.py</code></pre>
 <p>All random draws use fixed seeds. A rerun of every notebook from a clean state reproduced the saved result files exactly. Package versions are pinned in <code>requirements.txt</code>, and further details are in the repository's README and <code>data/README.md</code>.</p>
+</section>
 
-<h2 id="reference">12. Reference and data source</h2>
+<section id="reference" class="rv">
+<h2><span class="num">12</span>Reference and data source</h2>
 <ul>
   <li>Torgo, L. (2017). <i>Data Mining with R: Learning with Case Studies</i> (2nd ed.). CRC Press. Chapter 7, pp. 353-381.</li>
   <li>Chiaretti, S., Li, X., Gentleman, R., et al. (2004). Gene expression profile of adult T-cell acute lymphocytic leukemia identifies distinct subsets of patients with different response to therapy and survival. <i>Blood</i>, 103(7), 2771-2778. Data distributed as the Bioconductor <code>ALL</code> package.</li>
 </ul>
 <footer>Every number on this page is read from <code>assets/data.js</code>, which <code>src/build_site_data.py</code> builds from the files in <code>results/</code> and <code>data/</code>. Figures quoted from the book are labelled as such.</footer>
+</section>
 </main>
 
 <script src="assets/data.js"></script>
@@ -277,9 +376,23 @@ const F = {
   i: v => Math.round(v).toLocaleString('en-US'), s3: v => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(3),
   '': v => (typeof v === 'number' ? String(Math.round(v)) : v)
 };
-document.querySelectorAll('[data-k]').forEach(el => { el.textContent = F[el.dataset.f || ''](get(el.dataset.k)); });
+const fmtOf = el => F[el.dataset.f || ''];
+document.querySelectorAll('[data-k]').forEach(el => { el.textContent = fmtOf(el)(get(el.dataset.k)); });
 
-// Generic sortable table. cols: {label, get(row), fmt(value,row), bar(row)->0..1, cls}
+// hero numbers count up once, unless reduced motion is requested
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  document.querySelectorAll('.tile .v').forEach(el => {
+    const end = get(el.dataset.k), f = fmtOf(el), t0 = performance.now();
+    const tick = now => {
+      const p = Math.min(1, (now - t0) / 900), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = f(p < 1 ? end * e : end);
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+// Generic sortable table. cols: {label, get(row), fmt(value,row), bar(row)->0..1, neg}
 function sortable(el, cols, rows, key, dir) {
   let hl = null;
   const draw = () => {
@@ -300,19 +413,50 @@ function sortable(el, cols, rows, key, dir) {
   return { sort(i, d) { key = i; dir = d; draw(); }, highlight(i) { hl = i; draw(); } };
 }
 
-// class counts
-const cc = R.data.classes, total = R.data.patients;
-document.getElementById('class-table').innerHTML =
-  '<thead><tr><th>Class</th><th>Patients</th><th>Share</th></tr></thead><tbody>' +
-  Object.keys(cc).map(k => `<tr><td>${k}</td><td>${cc[k]}</td><td>${F.p1(cc[k] / total)}</td></tr>`).join('') +
-  `<tr><td><b>Total</b></td><td><b>${total}</b></td><td></td></tr></tbody>`;
+// Horizontal bars. rows: [label, value, cls]; mark: reference value drawn as a dashed line
+function hbars(el, rows, mark, markLabel) {
+  el.innerHTML = rows.map(([l, v, cls]) =>
+    `<div class="hb"><span>${l}</span><div class="track"><div class="fill ${cls || ''}" style="width:${(100 * v).toFixed(1)}%"></div>` +
+    (mark ? `<i class="mark" style="left:${(100 * mark).toFixed(1)}%"></i>` : '') + `</div><span class="val">${F['3'](v)}</span></div>`).join('') +
+    (mark ? `<div class="hb-note">dashed line: ${markLabel}</div>` : '');
+}
 
-// workflow table with metric switch
+// Dumbbell chart: one row per workflow, a dot for each of two values joined by a line
+function dumbbell(el, rows, s) {
+  const rowH = 22, left = 150, right = 24, top = 52, W = 760, plotW = W - left - right;
+  const H = top + rows.length * rowH + 30, x = v => left + (v - s.lo) / (s.hi - s.lo) * plotW;
+  let g = `<circle cx="${left}" cy="14" r="5" fill="${s.a.color}"/><text x="${left + 10}" y="18" class="leg">${s.a.name}</text>` +
+          `<circle cx="${left + 270}" cy="14" r="5" fill="${s.b.color}"/><text x="${left + 280}" y="18" class="leg">${s.b.name}</text>`;
+  for (let k = Math.ceil(s.lo * 10); k <= Math.floor(s.hi * 10 + 1e-9); k++) {
+    const t = k / 10;
+    g += `<line x1="${x(t)}" x2="${x(t)}" y1="${top - 8}" y2="${H - 26}" class="grid"/><text x="${x(t)}" y="${H - 10}" class="tick" text-anchor="middle">${t.toFixed(1)}</text>`;
+  }
+  g += `<line x1="${x(s.ref)}" x2="${x(s.ref)}" y1="${top - 8}" y2="${H - 26}" class="ref"/><text x="${x(s.ref) + 4}" y="${top - 16}" class="reflab">${s.refLabel}</text>`;
+  rows.forEach((r, i) => {
+    const y = top + i * rowH + rowH / 2, a = s.a.get(r), b = s.b.get(r);
+    g += `<text x="${left - 8}" y="${y + 4}" class="lab" text-anchor="end">${r.name}</text><line x1="${x(a)}" x2="${x(b)}" y1="${y}" y2="${y}" class="link"/>` +
+         `<circle cx="${x(a)}" cy="${y}" r="5" fill="${s.a.color}"><title>${r.name}: ${s.a.name} ${F['3'](a)}</title></circle>` +
+         `<circle cx="${x(b)}" cy="${y}" r="5" fill="${s.b.color}"><title>${r.name}: ${s.b.name} ${F['3'](b)}</title></circle>`;
+  });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${s.aria}">${g}</svg>`;
+}
+
+const total = R.data.patients, neg = R.data.always_neg;
 const W = R.workflows;
+
+// class counts as bars
+hbars(document.getElementById('class-bars'),
+  Object.entries(R.data.classes).map(([k, n]) => [`${k} (${n})`, n / total]));
+
+// metric chart and workflow table
+dumbbell(document.getElementById('metric-chart'), [...W].sort((a, b) => b.accuracy - a.accuracy), {
+  a: { name: 'Accuracy', color: '#4c72b0', get: w => w.accuracy }, b: { name: 'Balanced accuracy', color: '#d9822b', get: w => w.balanced },
+  lo: 0.2, hi: 1, ref: neg, refLabel: 'always NEG ' + F['3'](neg), aria: 'Accuracy and balanced accuracy for each workflow'
+});
 const rank = key => [...W].sort((a, b) => b[key] - a[key]).forEach((w, i) => { w['rank_' + key] = i + 1; });
 rank('accuracy'); rank('balanced');
 W.forEach(w => { w.shift = w.rank_accuracy - w.rank_balanced; });
-const wfCols = [
+const wf = sortable(document.getElementById('wf-table'), [
   { label: 'Workflow', get: w => w.name, fmt: v => `<code>${v}</code>` },
   { label: 'Accuracy', get: w => w.accuracy, fmt: F['3'], bar: w => w.accuracy },
   { label: 'Balanced acc.', get: w => w.balanced, fmt: F['3'], bar: w => w.balanced },
@@ -320,8 +464,7 @@ const wfCols = [
   { label: 'Rank bal.', get: w => w.rank_balanced },
   { label: 'Shift', get: w => w.shift, fmt: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) },
   ...C.map(c => ({ label: c, get: w => w.recall[c], fmt: F['2'] }))
-];
-const wf = sortable(document.getElementById('wf-table'), wfCols, W, 1, -1);
+], W, 1, -1);
 wf.highlight(1);
 const setMetric = i => {
   document.getElementById('m-acc').setAttribute('aria-pressed', i === 1);
@@ -331,9 +474,22 @@ const setMetric = i => {
 document.getElementById('m-acc').onclick = () => setMetric(1);
 document.getElementById('m-bal').onclick = () => setMetric(2);
 
-// leakage table
+// confusion heat table
+const cf = R.confusion;
+document.getElementById('conf-table').innerHTML =
+  '<thead><tr><th>True \\ predicted</th>' + cf.classes.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>' +
+  cf.matrix.map((row, i) => { const n = row.reduce((a, b) => a + b, 0);
+    return `<tr><td>${cf.classes[i]}</td>` + row.map((v, j) => { const p = v / n;
+      return `<td style="background:rgba(46,92,154,${(0.08 + 0.85 * p).toFixed(2)});color:${p > 0.5 ? '#fff' : 'inherit'};${i === j ? 'font-weight:bold' : ''}">${v}<small>${F.p0(p)}</small></td>`; }).join('') + '</tr>'; }).join('') + '</tbody>';
+
+// leakage chart and table
 W.forEach(w => { w.gap = w.leak_accuracy - w.accuracy; });
 const maxGap = Math.max(...W.map(w => Math.abs(w.gap)));
+dumbbell(document.getElementById('leak-chart'), [...W].sort((a, b) => b.gap - a.gap), {
+  a: { name: 'Selection inside the loop (honest)', color: '#4c72b0', get: w => w.accuracy },
+  b: { name: 'Selection outside the loop (leaky)', color: '#d9822b', get: w => w.leak_accuracy },
+  lo: 0.4, hi: 1, ref: neg, refLabel: 'always NEG ' + F['3'](neg), aria: 'Accuracy of each workflow with selection inside and outside the loop'
+});
 sortable(document.getElementById('leak-table'), [
   { label: 'Workflow', get: w => w.name, fmt: v => `<code>${v}</code>` },
   { label: 'Inside (honest)', get: w => w.accuracy, fmt: F['3'] },
@@ -341,8 +497,12 @@ sortable(document.getElementById('leak-table'), [
   { label: 'Gap', get: w => w.gap, fmt: F.s3, neg: true, bar: w => Math.abs(w.gap) / maxGap }
 ], W, 3, -1);
 
-// shuffle table
+// shuffle bars and table
 const S = R.summary.shuffle;
+hbars(document.getElementById('shuffle-bars'), [
+  ['Inside, mean of 24', S.inside_mean.accuracy], ['Inside, best workflow', S.inside_best],
+  ['Outside, mean of 24', S.outside_mean.accuracy, 'out'], ['Outside, best workflow', S.outside_best, 'out']
+], neg, 'always NEG ' + F['3'](neg));
 document.getElementById('shuffle-table').innerHTML =
   '<thead><tr><th>Gene selection</th><th>Mean accuracy</th><th>Best accuracy</th><th>Mean balanced acc.</th><th>Best balanced acc.</th></tr></thead><tbody>' +
   [['Inside the loop', 'inside'], ['Outside the loop', 'outside']].map(([t, k]) =>
@@ -353,7 +513,7 @@ document.getElementById('shuffle-table').innerHTML =
 const sc = R.data.stage_by_class, stages = Object.keys(sc);
 document.getElementById('stage-table').innerHTML =
   '<thead><tr><th>Stage</th>' + C.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>' +
-  stages.map(s => `<tr><td>${s}</td>${C.map(c => `<td>${sc[s][c]}</td>`).join('')}</tr>`).join('') + '</tbody>';
+  stages.map(s => `<tr><td>${s}</td>${C.map(c => `<td${sc[s][c] === 10 && c === 'ALL1/AF4' ? ' style="font-weight:bold;color:var(--warn)"' : ''}>${sc[s][c]}</td>`).join('')}</tr>`).join('') + '</tbody>';
 const majStage = Math.max(...stages.map(s => C.reduce((a, c) => a + sc[s][c], 0))) / total;
 const B = R.summary.b1_within, ST = R.summary.stage;
 document.getElementById('stage-result').innerHTML =
@@ -362,12 +522,23 @@ document.getElementById('stage-result').innerHTML =
   `<tr><td>Predict the five stages, all patients</td><td>${F['3'](ST.five_stages.accuracy)}</td><td>${F['3'](ST.five_stages.balanced_accuracy)}</td><td>largest stage ${F.p1(majStage)}; chance balanced 0.20</td></tr>` +
   `<tr><td>B1 against all other stages</td><td>${F['3'](ST.b1_vs_other.accuracy)}</td><td>${F['3'](ST.b1_vs_other.balanced_accuracy)}</td><td>chance balanced 0.50</td></tr></tbody>`;
 
-// contents bar: mark the section in view
-const links = [...document.querySelectorAll('#toc a')];
-const io = new IntersectionObserver(es => es.forEach(e => {
-  if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
-}), { rootMargin: '-20% 0px -70% 0px' });
-document.querySelectorAll('h2[id]').forEach(h => io.observe(h));
+// scroll progress, active section in the contents bar
+const links = [...document.querySelectorAll('#toc a')], secs = links.map(a => document.querySelector(a.getAttribute('href')));
+const bar = document.getElementById('progress');
+const onScroll = () => {
+  const h = document.documentElement;
+  bar.style.width = (100 * h.scrollTop / (h.scrollHeight - h.clientHeight || 1)) + '%';
+  let cur = -1; secs.forEach((s, i) => { if (s.getBoundingClientRect().top < 140) cur = i; });
+  links.forEach((a, i) => a.classList.toggle('on', i === cur));
+};
+addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
+// reveal sections as they come into view
+const rv = document.querySelectorAll('.rv');
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.03 });
+  rv.forEach(el => io.observe(el));
+} else rv.forEach(el => el.classList.add('in'));
 </script>
 </body>
 </html>
