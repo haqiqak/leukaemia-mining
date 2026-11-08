@@ -18,7 +18,7 @@ Acute lymphoblastic leukaemia (ALL) comes in subtypes, each linked to a differen
 ## Repository layout
 
 ```
-docs/        problem statement and chapter walkthrough
+docs/        problem statement, chapter walkthrough and the project page (docs/site)
 data/        the dataset (see data/README.md)
 notebooks/   analysis notebooks 01 to 05
 src/         reusable code
@@ -87,6 +87,14 @@ Main findings: the workflow ranking follows the book (k-NN and the better SVM se
 - The random-forest ranking uses impurity importance; the book uses permutation importance.
 - 24 workflows instead of 54: the clustering ensemble (s3) is not reproduced, the SVM grid has four of six settings and the random-forest grid has two of six.
 - Paired p-values are optimistic because the rounds share training patients.
+
+## Project page
+
+`docs/site/index.html` is a single-page write-up of the whole project: question, data, method, results, the leakage experiment, the shuffled-label check, the cell-stage check, limits and reproduction steps. Every number on it is read from `docs/site/assets/data.js`, which `python src/build_site_data.py` builds from `results/` and `data/`; rerun that script after rerunning the notebooks.
+
+**Open it locally.** Open `docs/site/index.html` in any web browser (double-click the file). It needs no server and no internet connection.
+
+**Publish it with GitHub Pages.** In the repository on GitHub, open Settings, then Pages. Under Build and deployment choose "Deploy from a branch", select the `main` branch and the `/docs` folder, and save. After a minute or two the page is available at `https://<account>.github.io/<repository>/site/`.
 
 ## Status
 

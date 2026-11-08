@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leukaemia Mining</title>
+<meta name="description" content="A Python reproduction and extension of a leukaemia gene-expression classification case study.">
+<style>
+:root {
+  --bg: #fbf7ec; --card: #fffdf6; --ink: #23262b; --muted: #5d6470; --head: #1f4e8c;
+  --line: #e3dcc8; --bar: #b4c8e4; --bar-hl: #4c72b0; --warn: #b5532f;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.65 Arial, Helvetica, sans-serif; }
+nav { position: sticky; top: 0; z-index: 10; background: var(--card); border-bottom: 1px solid var(--line);
+      overflow-x: auto; white-space: nowrap; padding: 0 16px; }
+nav a { display: inline-block; padding: 12px 10px; color: var(--head); text-decoration: none; font-size: 14px; }
+nav a:hover, nav a.on { color: var(--ink); box-shadow: inset 0 -3px var(--head); }
+main { max-width: 780px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { color: var(--head); font-size: 2.2rem; line-height: 1.2; margin: 24px 0 8px; }
+h2 { color: var(--head); font-size: 1.55rem; line-height: 1.3; margin: 56px 0 12px; scroll-margin-top: 64px; }
+h3 { color: var(--head); font-size: 1.1rem; margin: 28px 0 8px; }
+.lede { color: var(--muted); font-size: 1.15rem; margin: 0 0 24px; }
+.box { background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--head);
+       border-radius: 4px; padding: 16px 20px; margin: 20px 0; }
+.box h3 { margin-top: 0; }
+.box ul { margin: 8px 0 0; padding-left: 20px; }
+.note { border-left-color: var(--warn); }
+code { background: #f1ebd9; padding: 1px 5px; border-radius: 3px; font-size: .88em; }
+pre { background: #f1ebd9; padding: 14px 16px; border-radius: 4px; overflow-x: auto; font-size: .85rem; line-height: 1.5; }
+pre code { background: none; padding: 0; }
+figure { margin: 24px 0; }
+figure img { width: 100%; height: auto; border: 1px solid var(--line); background: #fff; border-radius: 4px; }
+figcaption { color: var(--muted); font-size: .9rem; margin-top: 6px; }
+.tw { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 4px; background: var(--card); }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { background: #f4eedb; font-weight: bold; }
+th button { all: inherit; cursor: pointer; font-weight: bold; padding: 0; }
+th button:hover { text-decoration: underline; }
+th[aria-sort="ascending"] button::after { content: " \25B2"; font-size: .7em; }
+th[aria-sort="descending"] button::after { content: " \25BC"; font-size: .7em; }
+td.wrap, th.wrap { white-space: normal; text-align: left; }
+td.bar { background: linear-gradient(90deg, var(--bar) var(--w), transparent var(--w)); }
+td.bar.hl { background: linear-gradient(90deg, #86a8d8 var(--w), transparent var(--w)); font-weight: bold; }
+#wf-table { font-size: .82rem; }
+#wf-table th, #wf-table td { padding: 6px 8px; }
+#stage-result th, #stage-result td { white-space: normal; }
+#stage-result th:last-child, #stage-result td:last-child { text-align: left; }
+figure.narrow img { max-width: 520px; display: block; margin: 0 auto; }
+td.neg { color: var(--warn); }
+.switch { display: inline-flex; border: 1px solid var(--head); border-radius: 4px; overflow: hidden; margin: 8px 0; }
+.switch button { font: inherit; font-size: .9rem; padding: 7px 14px; border: 0; background: var(--card); color: var(--head); cursor: pointer; }
+.switch button[aria-pressed="true"] { background: var(--head); color: #fff; }
+.steps { display: flex; flex-direction: column; gap: 0; margin: 20px 0; }
+.step { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 10px 14px; position: relative; }
+.step + .step { margin-top: 22px; }
+.step + .step::before { content: "\2193"; position: absolute; top: -21px; left: 50%; color: var(--head); font-size: 1.2rem; }
+.step b { color: var(--head); }
+.step .n { float: right; color: var(--muted); font-size: .9rem; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 640px) { .two { grid-template-columns: 1fr; } h1 { font-size: 1.8rem; } body { font-size: 16px; } }
+footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+</head>
+<body>
+<nav id="toc" aria-label="Contents">
+  <a href="#question">Question</a><a href="#data">Data</a><a href="#hard">Why hard</a><a href="#original">Original</a>
+  <a href="#reproduction">Reproduction</a><a href="#results">Results</a><a href="#leakage">Leakage</a>
+  <a href="#shuffle">Shuffle check</a><a href="#stage">Cell stage</a><a href="#meaning">Limits</a>
+  <a href="#reproduce">Reproduce</a><a href="#reference">Reference</a>
+</nav>
+
+<main>
+<h1>Leukaemia Mining</h1>
+<p class="lede">Can the activity of thousands of genes tell leukaemia subtypes apart? A Python reproduction and extension of a classic microarray case study, with a closer look at how easily such results become too good to be true.</p>
+
+<div class="box">
+  <h3>Summary</h3>
+  <ul>
+    <li><b>Task:</b> name one of four leukaemia classes for <span data-k="data.patients" data-f="i"></span> patients from <span data-k="data.genes" data-f="i"></span> gene measurements each.</li>
+    <li><b>Baseline:</b> the best of 24 workflows, <code data-k="summary.best_acc.name"></code>, reaches <span data-k="summary.best_acc.accuracy" data-f="3"></span> accuracy. Always answering the biggest class gives <span data-k="data.always_neg" data-f="3"></span>.</li>
+    <li><b>Two metrics, two winners:</b> <code data-k="summary.best_bal.name"></code> has lower accuracy but the best balanced accuracy (<span data-k="summary.best_bal.balanced_accuracy" data-f="3"></span>) because it recognises the five-patient class.</li>
+    <li><b>Extension:</b> choosing genes before splitting the patients raises accuracy by <span data-k="summary.leak.mean_gap" data-f="s3"></span> on average and by up to <span data-k="summary.leak.max_gap" data-f="s3"></span>.</li>
+    <li><b>Control:</b> with shuffled labels the honest pipeline's best result is <span data-k="summary.shuffle.inside_best" data-f="3"></span> (the always-guess rate), while the leaky one reaches <span data-k="summary.shuffle.outside_best" data-f="3"></span> from pure noise.</li>
+  </ul>
+</div>
+
+<h2 id="question">1. The question: telling subtypes apart from gene activity</h2>
+<p>Acute lymphoblastic leukaemia (ALL) is a fast-developing blood cancer in which immature white blood cells multiply uncontrollably. It is not a single disease. It comes in subtypes, and each is linked to a different genetic change. The subtype matters because different subtypes behave differently and can call for different treatment. That clinical background is general knowledge rather than something the case study examines.</p>
+<p>A laboratory chip called a microarray can measure how active thousands of genes are in a patient's sample, giving one number per gene. The case study's central hypothesis is that each subtype leaves a recognisable pattern in those numbers. If so, a computer should be able to look at the numbers and name the subtype. The interesting part is how reliably this can be shown with only a few dozen patients.</p>
+
+<h3>Terms used on this page</h3>
+<div class="tw"><table>
+  <tr><th>Term</th><th class="wrap">Plain meaning</th></tr>
+  <tr><td>Leukaemia</td><td class="wrap">Cancer of the blood-making system.</td></tr>
+  <tr><td>Lymphoblastic</td><td class="wrap">The runaway cells are immature versions ("blasts") of lymphocytes, white blood cells that fight infection.</td></tr>
+  <tr><td>B-cell</td><td class="wrap">One of two kinds of lymphocyte. This project uses B-cell ALL only.</td></tr>
+  <tr><td>Gene</td><td class="wrap">A stretch of DNA holding the instructions for one protein, like one recipe in a huge cookbook.</td></tr>
+  <tr><td>Gene expression</td><td class="wrap">How strongly a gene is switched on in a cell. A recipe cooked often has high expression.</td></tr>
+  <tr><td>Translocation</td><td class="wrap">Two chromosomes swap pieces. The swap can fuse two genes into a new one and change which genes are busy.</td></tr>
+  <tr><td>Subtype</td><td class="wrap">A named category of the same disease. Here each subtype is named after the genes involved in the swap.</td></tr>
+</table></div>
+
+<h3>The four classes</h3>
+<div class="tw"><table>
+  <tr><th>Class</th><th class="wrap">Meaning</th></tr>
+  <tr><td>BCR/ABL</td><td class="wrap">The genes BCR and ABL are fused by a translocation.</td></tr>
+  <tr><td>ALL1/AF4</td><td class="wrap">The genes ALL1 and AF4 are fused.</td></tr>
+  <tr><td>E2A/PBX1</td><td class="wrap">The genes E2A and PBX1 are fused.</td></tr>
+  <tr><td>NEG</td><td class="wrap">"Negative": tests found none of these abnormalities.</td></tr>
+</table></div>
+
+<h2 id="data">2. The data</h2>
+<p>The data come from a published study of ALL (Chiaretti et al., 2004), distributed with the Bioconductor project as the <code>ALL</code> package. The case study keeps the <span data-k="data.patients"></span> B-cell patients whose class is one of the four above. Each patient is a row; each of the <span data-k="data.genes" data-f="i"></span> gene measurements is a column; one more column holds the class, determined by laboratory tests.</p>
+<div class="tw"><table id="class-table"></table></div>
+<p>The classes are very uneven. The smallest, E2A/PBX1, has five patients. Always answering NEG would be right for <span data-k="data.always_neg" data-f="p1"></span> of the patients, so any model has to clearly beat that figure.</p>
+<figure>
+  <img src="assets/data_check.png" alt="Bar chart of patients per class and box plots of expression values for each class">
+  <figcaption>Left: patients per class (dashed line: half of all patients). Right: expression values per class. The distributions are almost identical, so the class signal cannot be seen in overall expression; it sits in individual genes.</figcaption>
+</figure>
+<h3>Why the small class matters</h3>
+<p>Five patients are thin evidence. With a 30% hold-out for testing, each round contains only one or two E2A/PBX1 patients, so recall for this class is very coarse in a single round and only meaningful as an average over many rounds. Overall accuracy can also look fine while the class is almost always wrong, because it is only about 5% of the patients. This is why the project reports balanced accuracy and per-class recall next to accuracy.</p>
+
+<h2 id="hard">3. Why this is hard</h2>
+<div class="two">
+  <div class="box"><h3>More columns than rows</h3><p>There are <span data-k="data.genes" data-f="i"></span> gene columns for <span data-k="data.patients"></span> patients. Some genes look predictive purely by luck, and a model can latch onto them: excellent on the patients it studied, poor on new ones. This is overfitting.</p></div>
+  <div class="box"><h3>Noise and irrelevant genes</h3><p>Most genes barely change between patients, and some probes on the chip are laboratory controls. They add noise and no information.</p></div>
+  <div class="box"><h3>Uneven classes</h3><p>One class has five patients. Accuracy rewards getting the large classes right and hardly notices failure on the small one.</p></div>
+  <div class="box note"><h3>Leakage</h3><p>If the class labels are used to pick the best genes using <i>all</i> patients, and the model is then tested on those same patients, the test patients have already shaped the choice. The reported accuracy is then too good to be true. Avoiding this is the central methodological point of the case study, and the extension below measures how large the effect is.</p></div>
+</div>
+
+<h2 id="original">4. The original approach</h2>
+<p>The case study (Torgo, <i>Data Mining with R</i>, Chapter 7) works in the R language. Its focus is feature selection: shrinking thousands of genes to a number a model can handle. The workflow is as follows.</p>
+<div class="steps">
+  <div class="step"><span class="n"><span data-k="data.genes" data-f="i"></span> genes</span><b>Start:</b> the expression table for the B-cell patients.</div>
+  <div class="step"><span class="n">to <span data-k="book.first_filter" data-f="i"></span></span><b>First filter, no labels:</b> remove control probes, duplicate probes, probes without a gene identifier and probes that hardly vary. Done once.</div>
+  <div class="step"><span class="n">to <span data-k="book.anova" data-f="i"></span></span><b>ANOVA filter, uses labels:</b> keep genes whose average expression differs between the classes (significance level 0.01). Redone inside every evaluation round.</div>
+  <div class="step"><span class="n">to <span data-k="book.top_genes"></span> genes</span><b>Optional cut:</b> keep the top <span data-k="book.top_genes"></span> genes by random-forest importance, or build an ensemble of <span data-k="book.ensemble_members"></span> models that each use one random gene from each of <span data-k="book.clusters"></span> gene clusters.</div>
+  <div class="step"><b>Classifiers:</b> random forest, support vector machine (SVM) and k-nearest neighbours (k-NN), each with a few settings.</div>
+  <div class="step"><span class="n"><span data-k="book.rounds"></span> rounds</span><b>Evaluation:</b> bootstrap resampling, with all label-using steps redone on each round's training patients only. Measure: accuracy.</div>
+</div>
+<p>The three classifiers in one line each: a <b>random forest</b> averages many decision trees that each see random subsets of genes; an <b>SVM</b> finds a boundary between classes, here with a curved (RBF) kernel; <b>k-NN</b> stores the training patients and labels a new patient by a vote among the k most similar ones, so it needs genes on a common scale.</p>
+<p>The case study compares <span data-k="book.workflows"></span> workflows (18 classifier settings times 3 gene-selection strategies). Its best result is about <span data-k="book.best_accuracy" data-f="2"></span> accuracy, from an SVM on the 30 random-forest genes. No random-forest variant appears in its top ten, and the top ten are not significantly different from one another.</p>
+
+<h2 id="reproduction">5. The reproduction in Python</h2>
+<p>The aim is to reproduce the workflow, not the R code, and to compare which setups do well rather than exact decimals. Results will not match the book exactly because the language, the random draws and the library defaults differ.</p>
+<div class="tw"><table>
+  <tr><th>Aspect</th><th class="wrap">Book</th><th class="wrap">This project</th><th class="wrap">Why</th></tr>
+  <tr><td>Workflows</td><td class="wrap"><span data-k="book.workflows"></span></td><td class="wrap">24: strategies s1 (all ANOVA genes) and s2 (random-forest top 30); the clustering ensemble is not reproduced. Random forest 2 settings, SVM 4, k-NN 6.</td><td class="wrap">Run time, and the aim is the ranking pattern. All three classifiers and both main strategies are covered.</td></tr>
+  <tr><td>Resampling</td><td class="wrap">Bootstrap, <span data-k="book.rounds"></span> rounds</td><td class="wrap"><span data-k="summary.rounds"></span> stratified rounds, <span data-k="summary.holdout" data-f="p0"></span> of patients held out each time</td><td class="wrap">Keeps class proportions in every test set and gives per-class recall directly. Accuracies are therefore not like for like with the book.</td></tr>
+  <tr><td>Gene ranking</td><td class="wrap">Permutation importance (drop in accuracy)</td><td class="wrap">Impurity importance from scikit-learn</td><td class="wrap">Much faster inside many rounds. It can favour some genes, and the effect on accuracy was not measured.</td></tr>
+  <tr><td>First filter</td><td class="wrap">R, <span data-k="book.first_filter" data-f="i"></span> genes</td><td class="wrap">Run in R with the same package, exported, then used in Python: <span data-k="data.first_filter" data-f="i"></span> genes; ANOVA keeps <span data-k="data.anova"></span> (book: <span data-k="book.anova"></span>)</td><td class="wrap">The filter relies on a gene-annotation database, and the current version maps more probes. Counts differ slightly.</td></tr>
+  <tr><td>Scaling</td><td class="wrap">Median and IQR for k-NN</td><td class="wrap">z-score for SVM and k-NN; median and IQR as a k-NN variant</td><td class="wrap">Distances and kernels need genes on one scale. Scalers are fitted on training patients only.</td></tr>
+  <tr><td>Measures</td><td class="wrap">Accuracy</td><td class="wrap">Accuracy, balanced accuracy, per-class recall, confusion matrix</td><td class="wrap">Class sizes differ greatly.</td></tr>
+</table></div>
+<p>Kept as in the book: the three classifiers, the ANOVA filter inside every round, the 30-gene random-forest strategy, and accuracy as the headline measure. Added beyond the book: the extra measures, the leakage experiment, the shuffled-label check and the cell-stage check described below.</p>
+
+<h2 id="results">6. Results: 24 workflows, two metrics</h2>
+<p>Each row is one workflow: a gene-selection strategy (<code>s1</code> all ANOVA genes, <code>s2</code> random-forest top 30) followed by a model. Values are means over <span data-k="summary.rounds"></span> rounds, with all selection done inside each round. The last four columns give recall for each class. Click a column header to sort. The switch picks which metric is highlighted and sorted. <i>Shift</i> is the rank by accuracy minus the rank by balanced accuracy: a positive value means the workflow looks better when each class counts equally.</p>
+<div class="switch">
+  <button id="m-acc" aria-pressed="true">Accuracy</button><button id="m-bal" aria-pressed="false">Balanced accuracy</button>
+</div>
+<div class="tw"><table id="wf-table"></table></div>
+<figure>
+  <img src="assets/baseline_accuracy.png" alt="Bar chart of accuracy for all 24 workflows with balanced accuracy as dots">
+  <figcaption>Accuracy (bars, with standard deviation over rounds) and balanced accuracy (dots) for all workflows. The dashed line is the always-NEG rate.</figcaption>
+</figure>
+<h3>What the table shows</h3>
+<ul>
+  <li><b>Ranking pattern.</b> k-NN and the better SVM settings lead, and no random-forest workflow is in the top ten: the best, <code data-k="summary.rf_best.name"></code>, ranks <span data-k="summary.rf_best.rank"></span> with <span data-k="summary.rf_best.accuracy" data-f="3"></span>. This matches the book. Mean accuracy by family is <span data-k="summary.family_accuracy.knn" data-f="3"></span> for k-NN, <span data-k="summary.family_accuracy.rf" data-f="3"></span> for random forest and <span data-k="summary.family_accuracy.svm" data-f="3"></span> for SVM; the SVM average is pulled down by two failing settings.</li>
+  <li><b>The metric changes the winner.</b> <code data-k="summary.best_acc.name"></code> is first by accuracy (<span data-k="summary.best_acc.accuracy" data-f="3"></span>, E2A/PBX1 recall <span data-k="summary.best_acc.E2A/PBX1" data-f="2"></span>). <code data-k="summary.best_bal.name"></code> is first by balanced accuracy (<span data-k="summary.best_bal.balanced_accuracy" data-f="3"></span>) with E2A/PBX1 recall <span data-k="summary.best_bal.E2A/PBX1" data-f="2"></span>, but lower accuracy (<span data-k="summary.best_bal.accuracy" data-f="3"></span>) because it makes more mistakes on NEG.</li>
+  <li><b>Accuracy hides the small class.</b> <code data-k="summary.rf_zero_e2a.name"></code> has accuracy <span data-k="summary.rf_zero_e2a.accuracy" data-f="3"></span> and recognises E2A/PBX1 in <span data-k="summary.rf_zero_e2a.E2A/PBX1" data-f="p0"></span> of cases.</li>
+  <li><b>Two SVMs fail.</b> <code data-k="summary.svm_failing.0.name"></code> (<span data-k="summary.svm_failing.0.accuracy" data-f="3"></span>) and <code data-k="summary.svm_failing.1.name"></code> (<span data-k="summary.svm_failing.1.accuracy" data-f="3"></span>) predict almost only NEG. The curved kernel compares patients by squared distance; with hundreds of standardised genes that distance is large, so the kernel value with gamma 0.01 is close to zero for every pair, nothing generalises, and the model falls back to the biggest class. The same gamma works with 30 genes. SVMs are sensitive to both gamma and the number of genes.</li>
+  <li><b>Differences between top workflows are small.</b> The paired tests flag <span data-k="summary.top10_p_below_005"></span> of the other <span data-k="summary.top10_others"></span> top-ten workflows as different from the best at the 5% level, unlike the book. The rounds share training patients, so these p-values are optimistic and small gaps should not be treated as established.</li>
+</ul>
+<figure class="narrow">
+  <img src="assets/baseline_confusion.png" alt="Confusion matrix of the best-accuracy workflow summed over all rounds">
+  <figcaption>Confusion matrix of the best-accuracy workflow, summed over all rounds. Rows are true classes, columns are predictions.</figcaption>
+</figure>
+
+<h2 id="leakage">7. The leakage experiment: selecting genes inside or outside the loop</h2>
+<p>The extension changes one thing. In the baseline, the ANOVA filter and the random-forest ranking are fitted on each round's training patients only. In the leaky version, the same selection is fitted once on all patients before the data are split, so every test patient has already influenced which genes are used. The splits, models and seeds are identical, so the two runs can be compared round by round.</p>
+<div class="box">
+  <h3>Result</h3>
+  <ul>
+    <li>The best workflow rises from <span data-k="summary.best_acc.accuracy" data-f="3"></span> (inside) to <span data-k="summary.leak.best_outside" data-f="3"></span> (outside, <code data-k="summary.leak.best_outside_name"></code>).</li>
+    <li>Mean gain over the 24 workflows: <span data-k="summary.leak.mean_gap" data-f="s3"></span> in accuracy and <span data-k="summary.leak.mean_gap_balanced" data-f="s3"></span> in balanced accuracy. <span data-k="summary.leak.higher_outside"></span> of <span data-k="summary.leak.n"></span> workflows score higher outside the loop, and <span data-k="summary.leak.significant"></span> of <span data-k="summary.leak.n"></span> differ at the 1% level (a test with the same optimism caveat).</li>
+    <li>The effect concentrates in strategy s2: <span data-k="summary.leak.gap_s2" data-f="s3"></span> on average, against <span data-k="summary.leak.gap_s1" data-f="s3"></span> for s1.</li>
+  </ul>
+</div>
+<div class="tw"><table id="leak-table"></table></div>
+<figure>
+  <img src="assets/leakage_accuracy.png" alt="Paired bar chart of accuracy for each workflow with selection inside and outside the loop">
+  <figcaption>Accuracy of each workflow with selection inside the loop (honest) and outside the loop (leaky).</figcaption>
+</figure>
+<p><b>Why s2 is hit harder.</b> Picking 30 genes out of several hundred by importance leaves much more room to fit the labels, including the test patients' labels, than keeping every gene that passes a significance test. The more aggressive the selection, the larger the inflation. The exceptions at the bottom of the table are the two failing SVMs, whose scores move with the gene set rather than with any real signal.</p>
+
+<h2 id="shuffle">8. The sanity check: shuffled labels</h2>
+<p>A high accuracy proves little unless the pipeline is known not to invent results. In this check the class labels are randomly permuted once, which removes any real link between genes and classes while keeping the class counts, so the always-NEG rate stays <span data-k="data.always_neg" data-f="3"></span>. Chance balanced accuracy for four classes is 0.25. Each run uses <span data-k="summary.shuffle.rounds"></span> rounds.</p>
+<div class="tw"><table id="shuffle-table"></table></div>
+<h3>What it proves</h3>
+<ul>
+  <li>With selection inside the loop, the best of 24 workflows reaches <span data-k="summary.shuffle.inside_best" data-f="3"></span>, which is the always-NEG rate, and the mean balanced accuracy is <span data-k="summary.shuffle.inside_mean.balanced_accuracy" data-f="3"></span>, close to chance. The pipeline finds no signal where none exists, which supports the baseline accuracies.</li>
+  <li>With selection outside the loop, the same meaningless labels give a mean accuracy of <span data-k="summary.shuffle.outside_mean.accuracy" data-f="3"></span> and a best of <span data-k="summary.shuffle.outside_best" data-f="3"></span>. There is nothing to find, so all of that gain is leakage: the chosen genes were picked to fit the shuffled labels.</li>
+</ul>
+<h3>What it does not prove</h3>
+<p>It uses one shuffle and 50 rounds, so the figures are indicative. It shows that the pipeline does not leak in this way; it does not show that the real accuracy is free of every other bias, such as the cell-stage question below.</p>
+
+<h2 id="stage">9. The cell-stage check</h2>
+<p>B-cell leukaemia samples are recorded with a stage label (B, B1 to B4). The table shows classes against stages. All ALL1/AF4 patients are in stage B1, and no other stage contains any. A classifier could therefore separate ALL1/AF4 by recognising the cell stage rather than the genetic subtype.</p>
+<div class="tw"><table id="stage-table"></table></div>
+<p>Two tests address this, using the best-accuracy workflow and the same resampling as the baseline.</p>
+<div class="tw"><table id="stage-result"></table></div>
+<h3>What it shows</h3>
+<ul>
+  <li>Within stage B1 only (<span data-k="summary.b1_within.patients"></span> patients: ALL1/AF4 and NEG), stage is constant, yet the workflow separates the two classes with accuracy <span data-k="summary.b1_within.s2.accuracy" data-f="3"></span>. The larger class is only <span data-k="summary.b1_within.reference" data-f="p1"></span> of these patients. The classifier therefore separates this subtype by something other than stage.</li>
+  <li>The stage itself is only partly encoded in the genes. Predicting the five stages gives balanced accuracy <span data-k="summary.stage.five_stages.balanced_accuracy" data-f="3"></span> (chance 0.20), and B1 against all other stages gives <span data-k="summary.stage.b1_vs_other.balanced_accuracy" data-f="3"></span> (chance 0.50).</li>
+</ul>
+<h3>What it does not show</h3>
+<ul>
+  <li>It does not show that stage plays no role: B1 is recognised better than chance, so part of the very high ALL1/AF4 recall in the baseline may still come from stage information.</li>
+  <li>It rests on <span data-k="summary.b1_within.patients"></span> patients, with five or six in each test set. The single BCR/ABL patient in stage B1 is left out because one patient cannot be split between training and test, so only ALL1/AF4 against NEG is tested. BCR/ABL and E2A/PBX1 are not checked for a stage confound.</li>
+  <li>It removes the stage explanation only. The two classes may differ in other ways, such as age or sample handling.</li>
+</ul>
+
+<h2 id="meaning">10. What this means, and the limits</h2>
+<p>Gene activity does carry enough information to separate these leukaemia subtypes better than guessing, and the ranking of methods follows the original case study. The more transferable lesson concerns evaluation: the way genes are selected can change the reported accuracy by several points, the best model depends on the metric, and a shuffled-label control is a cheap way to check a pipeline.</p>
+<div class="box note">
+  <h3>Limits</h3>
+  <ul>
+    <li><b>Small sample.</b> <span data-k="data.patients"></span> patients from one study.</li>
+    <li><b>The five-patient class.</b> E2A/PBX1 recall is coarse and noisy; each test set holds one or two of these patients.</li>
+    <li><b>One seed and one resampling scheme.</b> The sizes of the gaps are specific to this setup. Accuracies differ from the book by design (resampling, gene counts, importance method) and should not be compared as decimals.</li>
+    <li><b>Optimistic significance tests.</b> The rounds share training patients, so the paired p-values are too small. The book has the same issue.</li>
+    <li><b>Importance method.</b> Impurity importance was used instead of permutation importance, and the two were not compared.</li>
+    <li><b>Not a medical tool.</b> This is a learning exercise on one small dataset and must not be used for diagnosis.</li>
+  </ul>
+</div>
+
+<h2 id="reproduce">11. How to reproduce</h2>
+<p>The exported data and all results are included in the repository, so the notebooks can be run without R. The R steps regenerate the data files.</p>
+<pre><code>git clone &lt;repository-url&gt;
+cd &lt;project-folder&gt;
+python -m venv .venv
+source .venv/bin/activate     # on Windows, run the activate script in .venv/Scripts
+pip install -r requirements.txt
+
+# optional: regenerate the data (needs R with the Bioconductor packages ALL, genefilter, hgu95av2.db)
+Rscript src/export_all.R
+Rscript src/export_filter.R
+
+# run the notebooks in order (about 45 minutes in total)
+for n in notebooks/0*.ipynb; do jupyter nbconvert --to notebook --execute --inplace "$n"; done
+
+# refresh the numbers on this page
+python src/build_site_data.py</code></pre>
+<p>All random draws use fixed seeds. A rerun of every notebook from a clean state reproduced the saved result files exactly. Package versions are pinned in <code>requirements.txt</code>, and further details are in the repository's README and <code>data/README.md</code>.</p>
+
+<h2 id="reference">12. Reference and data source</h2>
+<ul>
+  <li>Torgo, L. (2017). <i>Data Mining with R: Learning with Case Studies</i> (2nd ed.). CRC Press. Chapter 7, pp. 353-381.</li>
+  <li>Chiaretti, S., Li, X., Gentleman, R., et al. (2004). Gene expression profile of adult T-cell acute lymphocytic leukemia identifies distinct subsets of patients with different response to therapy and survival. <i>Blood</i>, 103(7), 2771-2778. Data distributed as the Bioconductor <code>ALL</code> package.</li>
+</ul>
+<footer>Every number on this page is read from <code>assets/data.js</code>, which <code>src/build_site_data.py</code> builds from the files in <code>results/</code> and <code>data/</code>. Figures quoted from the book are labelled as such.</footer>
+</main>
+
+<script src="assets/data.js"></script>
+<script>
+const R = window.RESULTS;
+const C = ['NEG', 'BCR/ABL', 'ALL1/AF4', 'E2A/PBX1'];
+const get = p => p.split('.').reduce((o, k) => o[k], R);
+const F = {
+  '3': v => v.toFixed(3), '2': v => v.toFixed(2), p0: v => Math.round(v * 100) + '%', p1: v => (v * 100).toFixed(1) + '%',
+  i: v => Math.round(v).toLocaleString('en-US'), s3: v => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(3),
+  '': v => (typeof v === 'number' ? String(Math.round(v)) : v)
+};
+document.querySelectorAll('[data-k]').forEach(el => { el.textContent = F[el.dataset.f || ''](get(el.dataset.k)); });
+
+// Generic sortable table. cols: {label, get(row), fmt(value,row), bar(row)->0..1, cls}
+function sortable(el, cols, rows, key, dir) {
+  let hl = null;
+  const draw = () => {
+    const s = [...rows].sort((a, b) => { const x = cols[key].get(a), y = cols[key].get(b); return (x > y ? 1 : x < y ? -1 : 0) * dir; });
+    const head = cols.map((c, i) => `<th scope="col" aria-sort="${i === key ? (dir > 0 ? 'ascending' : 'descending') : 'none'}"><button data-i="${i}">${c.label}</button></th>`).join('');
+    const body = s.map(r => '<tr>' + cols.map((c, i) => {
+      const v = c.get(r), cls = [c.bar ? 'bar' : '', i === hl ? 'hl' : '', c.neg && v < 0 ? 'neg' : ''].join(' ');
+      const w = c.bar ? ` style="--w:${(100 * c.bar(r)).toFixed(1)}%"` : '';
+      return `<td class="${cls}"${w}>${c.fmt ? c.fmt(v, r) : v}</td>`;
+    }).join('') + '</tr>').join('');
+    el.innerHTML = `<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
+  };
+  el.onclick = e => {
+    const b = e.target.closest('button[data-i]'); if (!b) return;
+    const i = +b.dataset.i; dir = i === key ? -dir : (i === 0 ? 1 : -1); key = i; draw();
+  };
+  draw();
+  return { sort(i, d) { key = i; dir = d; draw(); }, highlight(i) { hl = i; draw(); } };
+}
+
+// class counts
+const cc = R.data.classes, total = R.data.patients;
+document.getElementById('class-table').innerHTML =
+  '<thead><tr><th>Class</th><th>Patients</th><th>Share</th></tr></thead><tbody>' +
+  Object.keys(cc).map(k => `<tr><td>${k}</td><td>${cc[k]}</td><td>${F.p1(cc[k] / total)}</td></tr>`).join('') +
+  `<tr><td><b>Total</b></td><td><b>${total}</b></td><td></td></tr></tbody>`;
+
+// workflow table with metric switch
+const W = R.workflows;
+const rank = key => [...W].sort((a, b) => b[key] - a[key]).forEach((w, i) => { w['rank_' + key] = i + 1; });
+rank('accuracy'); rank('balanced');
+W.forEach(w => { w.shift = w.rank_accuracy - w.rank_balanced; });
+const wfCols = [
+  { label: 'Workflow', get: w => w.name, fmt: v => `<code>${v}</code>` },
+  { label: 'Accuracy', get: w => w.accuracy, fmt: F['3'], bar: w => w.accuracy },
+  { label: 'Balanced acc.', get: w => w.balanced, fmt: F['3'], bar: w => w.balanced },
+  { label: 'Rank acc.', get: w => w.rank_accuracy },
+  { label: 'Rank bal.', get: w => w.rank_balanced },
+  { label: 'Shift', get: w => w.shift, fmt: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) },
+  ...C.map(c => ({ label: c, get: w => w.recall[c], fmt: F['2'] }))
+];
+const wf = sortable(document.getElementById('wf-table'), wfCols, W, 1, -1);
+wf.highlight(1);
+const setMetric = i => {
+  document.getElementById('m-acc').setAttribute('aria-pressed', i === 1);
+  document.getElementById('m-bal').setAttribute('aria-pressed', i === 2);
+  wf.highlight(i); wf.sort(i, -1);
+};
+document.getElementById('m-acc').onclick = () => setMetric(1);
+document.getElementById('m-bal').onclick = () => setMetric(2);
+
+// leakage table
+W.forEach(w => { w.gap = w.leak_accuracy - w.accuracy; });
+const maxGap = Math.max(...W.map(w => Math.abs(w.gap)));
+sortable(document.getElementById('leak-table'), [
+  { label: 'Workflow', get: w => w.name, fmt: v => `<code>${v}</code>` },
+  { label: 'Inside (honest)', get: w => w.accuracy, fmt: F['3'] },
+  { label: 'Outside (leaky)', get: w => w.leak_accuracy, fmt: F['3'] },
+  { label: 'Gap', get: w => w.gap, fmt: F.s3, neg: true, bar: w => Math.abs(w.gap) / maxGap }
+], W, 3, -1);
+
+// shuffle table
+const S = R.summary.shuffle;
+document.getElementById('shuffle-table').innerHTML =
+  '<thead><tr><th>Gene selection</th><th>Mean accuracy</th><th>Best accuracy</th><th>Mean balanced acc.</th><th>Best balanced acc.</th></tr></thead><tbody>' +
+  [['Inside the loop', 'inside'], ['Outside the loop', 'outside']].map(([t, k]) =>
+    `<tr><td>${t}</td><td>${F['3'](S[k + '_mean'].accuracy)}</td><td>${F['3'](S[k + '_best'])}</td><td>${F['3'](S[k + '_mean'].balanced_accuracy)}</td><td>${F['3'](S[k + '_best_balanced'])}</td></tr>`).join('') +
+  '</tbody>';
+
+// stage tables
+const sc = R.data.stage_by_class, stages = Object.keys(sc);
+document.getElementById('stage-table').innerHTML =
+  '<thead><tr><th>Stage</th>' + C.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>' +
+  stages.map(s => `<tr><td>${s}</td>${C.map(c => `<td>${sc[s][c]}</td>`).join('')}</tr>`).join('') + '</tbody>';
+const majStage = Math.max(...stages.map(s => C.reduce((a, c) => a + sc[s][c], 0))) / total;
+const B = R.summary.b1_within, ST = R.summary.stage;
+document.getElementById('stage-result').innerHTML =
+  '<thead><tr><th>Test</th><th>Accuracy</th><th>Balanced acc.</th><th>Reference</th></tr></thead><tbody>' +
+  `<tr><td>ALL1/AF4 against NEG, stage B1 only (${B.patients} patients)</td><td>${F['3'](B.s2.accuracy)}</td><td>${F['3'](B.s2.balanced_accuracy)}</td><td>larger class ${F.p1(B.reference)}</td></tr>` +
+  `<tr><td>Predict the five stages, all patients</td><td>${F['3'](ST.five_stages.accuracy)}</td><td>${F['3'](ST.five_stages.balanced_accuracy)}</td><td>largest stage ${F.p1(majStage)}; chance balanced 0.20</td></tr>` +
+  `<tr><td>B1 against all other stages</td><td>${F['3'](ST.b1_vs_other.accuracy)}</td><td>${F['3'](ST.b1_vs_other.balanced_accuracy)}</td><td>chance balanced 0.50</td></tr></tbody>`;
+
+// contents bar: mark the section in view
+const links = [...document.querySelectorAll('#toc a')];
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
+}), { rootMargin: '-20% 0px -70% 0px' });
+document.querySelectorAll('h2[id]').forEach(h => io.observe(h));
+</script>
+</body>
+</html>
