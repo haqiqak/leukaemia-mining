@@ -53,12 +53,12 @@ def make_models(seed=0):
     return models
 
 
-def evaluate(X, y, n_rounds=100, test_size=0.3, seed=0, leak=False):
+def evaluate(X, y, n_rounds=100, test_size=0.3, seed=0, leak=False, models=None, classes=CLASSES):
     """Repeated stratified resampling. Selection is fitted on the training patients of each
     round (leak=False) or once on all patients before resampling (leak=True)."""
     splits = StratifiedShuffleSplit(n_splits=n_rounds, test_size=test_size, random_state=seed)
     genes_all = select(X, y, seed) if leak else None
-    models = make_models(seed)
+    models = models or make_models(seed)
     rows, confusion = [], {}
     for r, (tr, te) in enumerate(splits.split(X, y)):
         genes = genes_all if leak else select(X.iloc[tr], y.iloc[tr], seed=r)
@@ -70,8 +70,8 @@ def evaluate(X, y, n_rounds=100, test_size=0.3, seed=0, leak=False):
                 row = {'round': r, 'selection': sel, 'model': name,
                        'accuracy': accuracy_score(true, pred),
                        'balanced_accuracy': balanced_accuracy_score(true, pred)}
-                row.update(dict(zip(CLASSES, recall_score(true, pred, labels=CLASSES, average=None))))
+                row.update(dict(zip(classes, recall_score(true, pred, labels=classes, average=None))))
                 rows.append(row)
-                cm = confusion_matrix(true, pred, labels=CLASSES)
+                cm = confusion_matrix(true, pred, labels=classes)
                 confusion[(sel, name)] = confusion.get((sel, name), 0) + cm
     return pd.DataFrame(rows), confusion
