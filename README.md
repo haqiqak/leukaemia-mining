@@ -23,7 +23,6 @@ data/        the dataset (see data/README.md)
 notebooks/   analysis notebooks 01 to 05
 src/         reusable code
 results/     tables and figures produced by the notebooks
-slides/      presentation material
 ```
 
 ## Reproducing the results
@@ -79,7 +78,7 @@ All values are means over the rounds, computed in the notebooks. The always-NEG 
 | ALL1/AF4 against NEG within stage B1 only (18 patients) | accuracy 0.960 (`s2_knn3_z`), larger class 0.556 | 05 |
 | Stage prediction from genes: balanced accuracy, five stages / B1 against rest | 0.420 (chance 0.20) / 0.774 (chance 0.50) | 05 |
 
-Main findings: the workflow ranking follows the book (k-NN and SVM ahead of random forest, 30-gene selection mostly ahead of all genes); accuracy and balanced accuracy rank workflows differently because of the five-patient E2A/PBX1 class; selecting genes outside the loop inflates accuracy, and the shuffled-label control shows that selection inside the loop does not.
+Main findings: the workflow ranking follows the book (k-NN and the better SVM settings lead, no random forest in the top 10, 30-gene selection mostly ahead of all genes); accuracy and balanced accuracy rank workflows differently because of the five-patient E2A/PBX1 class; selecting genes outside the loop inflates accuracy, and the shuffled-label control shows that selection inside the loop does not.
 
 ## Differences from the book
 
