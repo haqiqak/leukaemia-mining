@@ -113,7 +113,7 @@ Goal: remove genes that cannot possibly help.
 - Some probes on the chip are **controls**. On this chip type (Affymetrix U95Av2) their names start with `AFFX` and they can be removed.
 - To see variability, each gene is summarised by its **median** and **inter-quartile range (IQR)**, then plotted. The plot shows a large share of genes with an IQR near zero.
 - **Caveat the author states:** judging genes one at a time risks discarding a gene that is useless alone but useful in combination with others. Methods that account for dependencies between features exist (for example RELIEF), but gene-by-gene filtering is the common practice for data this size.
-- **Rule used:** remove genes whose variability (IQR) is below **one fifth of the global IQR** of all expression values.
+- **Rule used (as the book states it):** remove genes whose variability (IQR) is below **one fifth of the global IQR** of all expression values. The code actually removes the least variable 54% of the remaining genes (see note 6 at the end).
 - A function from the `genefilter` package applies this together with the control-probe removal.
 
 **Result: 12,625 genes reduced to 3,943.** The filter log breaks it down:
@@ -270,3 +270,4 @@ These are points to be aware of when reproducing the work. Check them against th
 3. The book's accuracy figures come from R's random number generator and package versions of 2016. Python numbers will differ by a few points. Compare which setups rank well, not exact decimals.
 4. The full 54-workflow grid is expensive. The book itself recommends not running it casually.
 5. The chapter fixes the number of genes at 30 for s2 and s3 and never studies how accuracy changes with that number.
+6. The low-variance filter does not do what the text says. `nsFilter` reads `var.cutoff` as a quantile by default (`filterByQuantile = TRUE`), so the value IQR/5 (about 0.54) removes the 54% of remaining genes with the lowest IQR rather than genes with an IQR below 0.54. The book's own log matches this: 4,654 of the 8,597 genes left after the other steps are removed, which is 54%.

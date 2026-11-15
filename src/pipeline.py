@@ -1,5 +1,9 @@
 import numpy as np
 import pandas as pd
+from scipy.cluster.hierarchy import fcluster, linkage
+from scipy.spatial.distance import squareform
+from scipy.stats import spearmanr
+from sklearn.base import clone
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import f_classif
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix, recall_score
@@ -32,11 +36,27 @@ def rf_top_genes(X, y, n=30, seed=0):
     return X.columns[np.argsort(rf.feature_importances_)[::-1][:n]]
 
 
+def gene_clusters(X, n=30):
+    """n groups of similar genes: complete-linkage clustering on 1 - squared Spearman correlation (as varclus)."""
+    rho = spearmanr(X).statistic
+    groups = fcluster(linkage(squareform(1 - rho ** 2, checks=False), 'complete'), n, 'maxclust')
+    return [X.columns[groups == g] for g in np.unique(groups)]
+
+
 def select(X, y, seed=0):
-    """Gene sets for both strategies: s1 = all ANOVA genes, s2 = random-forest top 30 of those."""
+    """Gene sets: s1 = all ANOVA genes, s2 = random-forest top 30 of those, s3 = 30 clusters of those."""
     s1 = anova_genes(X, y)
-    s2 = rf_top_genes(X[s1], y, seed=seed)
-    return {'s1': s1, 's2': s2}
+    return {'s1': s1, 's2': rf_top_genes(X[s1], y, seed=seed), 's3': gene_clusters(X[s1])}
+
+
+def vote(model, X_train, y_train, X_test, clusters, n_models=50, seed=0):
+    """Majority vote of n_models copies of model, each trained on one random gene from every cluster."""
+    rng = np.random.default_rng(seed)
+    preds = []
+    for _ in range(n_models):
+        cols = [rng.choice(c) for c in clusters]
+        preds.append(clone(model).fit(X_train[cols], y_train).predict(X_test[cols]))
+    return pd.DataFrame(preds).mode().iloc[0].to_numpy()  # ties go to the first class alphabetically, as in R
 
 
 def make_models(seed=0):
@@ -64,8 +84,12 @@ def evaluate(X, y, n_rounds=100, test_size=0.3, seed=0, leak=False, models=None,
         genes = genes_all if leak else select(X.iloc[tr], y.iloc[tr], seed=r)
         for sel, cols in genes.items():
             for name, model in models.items():
-                model.fit(X.iloc[tr][cols], y.iloc[tr])
-                pred = model.predict(X.iloc[te][cols])
+                if sel == 's3' and name.startswith('rf'):
+                    continue  # 50 forests of 500 trees per round is too slow; a forest is already an ensemble
+                if sel == 's3':
+                    pred = vote(model, X.iloc[tr], y.iloc[tr], X.iloc[te], cols, seed=r)
+                else:
+                    pred = model.fit(X.iloc[tr][cols], y.iloc[tr]).predict(X.iloc[te][cols])
                 true = y.iloc[te]
                 row = {'round': r, 'selection': sel, 'model': name,
                        'accuracy': accuracy_score(true, pred),

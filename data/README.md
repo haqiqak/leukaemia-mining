@@ -43,7 +43,9 @@ Patient ids are strings with leading zeros (for example `01005`); read them as t
    Rscript src/export_filter.R
    ```
 
-   This applies the book's label-free filter (`nsFilter`: control probes, probes without a gene id, duplicate probes, and probes with an IQR below one fifth of the global IQR) and writes the kept probe ids to `data/genes_kept.csv`. With genefilter 1.92.0 and hgu95av2.db 3.13.0 it keeps 4,025 probes; the book reports 3,943. The difference comes from the annotation version (fewer probes lack a gene id in the current database: 942 against 1,151 in the book).
+   This applies the book's label-free filter and writes the kept probe ids to `data/genes_kept.csv`. `nsFilter` drops control probes, probes without a gene id and duplicate probes, then the least variable 54% of the remaining probes (lowest IQR). With genefilter 1.92.0 and hgu95av2.db 3.13.0 it keeps 4,025 probes; the book reports 3,943. The difference comes from the annotation version (fewer probes lack a gene id in the current database: 942 against 1,151 in the book).
+
+   **Note on the low-variance step.** The book describes it as removing probes whose IQR is below one fifth of the global IQR (0.54). The call does something else: `nsFilter` has `filterByQuantile = TRUE` by default, so it reads 0.54 as a quantile and removes the 54% of remaining probes with the lowest IQR. The book's own filter log agrees with this reading (4,654 of 8,597 probes removed, 54%), and so does this export: the kept probes have IQRs down to 0.38, below 0.54. The script keeps the book's call unchanged, so the result matches the book's method.
 
 4. Check the export by running `notebooks/01_data_check.ipynb`. It confirms the shape, the class counts, the value range and the absence of missing values.
 

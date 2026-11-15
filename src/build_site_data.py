@@ -36,6 +36,7 @@ best_acc, best_bal = b['accuracy'].idxmax(), b['balanced_accuracy'].idxmax()
 top10 = b['accuracy'].sort_values(ascending=False).index[:10]
 p_top = [wilcoxon(bp[best_acc], bp[w]).pvalue for w in top10[1:]]
 p_leak = [wilcoxon(lp[w], bp[w]).pvalue for w in b.index]
+sig = pd.Series(p_leak, index=b.index) < 0.01
 rank = b['accuracy'].rank(ascending=False)
 is_rf = b.index.str.contains('_rf_')
 fam = b['accuracy'].groupby(b.index.str.split('_').str[1].str.replace(r'\d+', '', regex=True)).mean()
@@ -49,6 +50,12 @@ stage = pd.read_csv(R + 'stage_prediction_scores.csv', index_col=[0, 1])
 stage = {k: stage.loc[k].groupby('selection')[M].mean().loc['s2'] for k in ('five_stages', 'b1_vs_other')}
 counts = labels['class'].value_counts()
 b1 = labels[(labels.BT == 'B1') & (labels['class'] != 'BCR/ABL')]['class']
+perm = pd.read_csv(R + 'permutation_scores.csv')
+real = perm.loc[perm.labels == 'true', 'balanced_accuracy'].iloc[0]
+null = perm.loc[perm.labels == 'shuffled', 'balanced_accuracy']
+genes = pd.read_csv(R + 'gene_count_scores.csv').groupby(['model', 'genes'])[M + ['E2A/PBX1']].mean()
+gene_count = {short: {int(n): genes.loc[(model, n)].to_dict() for n in genes.loc[model].index}
+              for short, model in (('knn', 'knn3_z'), ('svm', 'svm_C100_g0.01'))}
 
 data = {
     'data': {'patients': len(labels), 'genes': n_genes, 'first_filter': len(pd.read_csv(D + 'genes_kept.csv')),
@@ -67,11 +74,15 @@ data = {
         'rf_best': {'name': b[is_rf]['accuracy'].idxmax(), 'accuracy': b[is_rf]['accuracy'].max(),
                     'rank': rank[b[is_rf]['accuracy'].idxmax()]},
         'rf_zero_e2a': {'name': 's1_rf_mtry5', **b.loc['s1_rf_mtry5', M + C].to_dict()},
-        'svm_failing': [{'name': w, **b.loc[w, M + C].to_dict()} for w in b.index[(b['accuracy'] < 0.6)]],
+        'n_workflows': len(b),
+        'svm_failing': [{'name': w, **b.loc[w, M + C].to_dict()}
+                        for w in b.index[(b['accuracy'] < 0.6) & b.index.str.startswith('s1')]],
         'family_accuracy': fam.to_dict(),
         'top10_p_below_005': int(sum(p < 0.05 for p in p_top)), 'top10_others': len(p_top),
         'leak': {'mean_gap': gap.mean(), 'mean_gap_balanced': (l['balanced_accuracy'] - b['balanced_accuracy']).mean(),
                  'gap_s1': gap[gap.index.str[:2] == 's1'].mean(), 'gap_s2': gap[gap.index.str[:2] == 's2'].mean(),
+                 'gap_s3': gap[gap.index.str[:2] == 's3'].mean(),
+                 'sig_higher': int((sig & (gap > 0)).sum()), 'sig_lower': int((sig & (gap < 0)).sum()),
                  'max_gap': gap.max(), 'max_gap_name': gap.idxmax(),
                  'best_outside': l['accuracy'].max(), 'best_outside_name': l['accuracy'].idxmax(),
                  'significant': int(sum(p < 0.01 for p in p_leak)), 'n': len(p_leak),
@@ -81,6 +92,9 @@ data = {
                     'inside_best_balanced': s_in['balanced_accuracy'].max(),
                     'outside_best_balanced': s_out['balanced_accuracy'].max(),
                     'rounds': int(sh_in['round'].nunique())},
+        'permutation': {'real': real, 'n': len(null), 'null_mean': null.mean(), 'null_p95': null.quantile(0.95),
+                        'null_max': null.max(), 'p': ((null >= real).sum() + 1) / (len(null) + 1)},
+        'gene_count': gene_count,
         'b1_within': {'patients': len(b1), 's1': within.loc['s1'].to_dict(), 's2': within.loc['s2'].to_dict(),
                       'reference': b1.value_counts().max() / len(b1)},
         'stage': {k: v.to_dict() for k, v in stage.items()},
@@ -90,5 +104,6 @@ data = {
 
 with open(OUT + 'data.js', 'w') as f:
     f.write('window.RESULTS = ' + json.dumps(data, default=float, separators=(',', ':')) + ';\n')
-shutil.copy(R + 'data_check.png', OUT + 'data_check.png')
+for png in ('data_check.png', 'gene_count.png'):
+    shutil.copy(R + png, OUT + png)
 print('written', OUT)

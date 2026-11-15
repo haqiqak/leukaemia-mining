@@ -135,7 +135,7 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
 <nav id="toc" aria-label="Contents">
   <a href="#question">Question</a><a href="#data">Data</a><a href="#hard">Why hard</a><a href="#original">Original</a>
   <a href="#reproduction">Reproduction</a><a href="#results">Results</a><a href="#leakage">Leakage</a>
-  <a href="#shuffle">Shuffle check</a><a href="#stage">Cell stage</a><a href="#meaning">Limits</a>
+  <a href="#shuffle">Shuffle check</a><a href="#stage">Cell stage</a><a href="#genes">Gene count</a><a href="#meaning">Limits</a>
   <a href="#reproduce">Reproduce</a><a href="#reference">Reference</a>
 </nav>
 
@@ -148,7 +148,7 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
     <div class="tiles">
       <div class="tile"><div class="v" data-k="data.patients" data-f="i"></div><div class="l">B-cell patients</div></div>
       <div class="tile"><div class="v" data-k="data.genes" data-f="i"></div><div class="l">gene measurements per patient</div></div>
-      <div class="tile"><div class="v" data-k="summary.best_acc.accuracy" data-f="3"></div><div class="l">best accuracy of 24 workflows (guessing: <span data-k="data.always_neg" data-f="3"></span>)</div></div>
+      <div class="tile"><div class="v" data-k="summary.best_acc.accuracy" data-f="3"></div><div class="l">best accuracy of <span data-k="summary.n_workflows"></span> workflows (guessing: <span data-k="data.always_neg" data-f="3"></span>)</div></div>
       <div class="tile"><div class="v" data-k="summary.leak.mean_gap" data-f="s3"></div><div class="l">average accuracy inflation from leaky gene selection</div></div>
     </div>
   </div>
@@ -159,7 +159,7 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
   <h3>Summary</h3>
   <ul>
     <li><b>Task:</b> name one of four leukaemia classes for <span data-k="data.patients" data-f="i"></span> patients from <span data-k="data.genes" data-f="i"></span> gene measurements each.</li>
-    <li><b>Baseline:</b> the best of 24 workflows, <code data-k="summary.best_acc.name"></code>, reaches <span data-k="summary.best_acc.accuracy" data-f="3"></span> accuracy. Always answering the biggest class gives <span data-k="data.always_neg" data-f="3"></span>.</li>
+    <li><b>Baseline:</b> the best of <span data-k="summary.n_workflows"></span> workflows, <code data-k="summary.best_acc.name"></code>, reaches <span data-k="summary.best_acc.accuracy" data-f="3"></span> accuracy. Always answering the biggest class gives <span data-k="data.always_neg" data-f="3"></span>.</li>
     <li><b>Two metrics, two winners:</b> <code data-k="summary.best_bal.name"></code> has lower accuracy but the best balanced accuracy (<span data-k="summary.best_bal.balanced_accuracy" data-f="3"></span>) because it recognises the five-patient class.</li>
     <li><b>Extension:</b> choosing genes before splitting the patients raises accuracy by <span data-k="summary.leak.mean_gap" data-f="s3"></span> on average and by up to <span data-k="summary.leak.max_gap" data-f="s3"></span>.</li>
     <li><b>Control:</b> with shuffled labels the honest pipeline's best result is <span data-k="summary.shuffle.inside_best" data-f="3"></span> (the always-guess rate), while the leaky one reaches <span data-k="summary.shuffle.outside_best" data-f="3"></span> from pure noise.</li>
@@ -201,7 +201,7 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
   <figcaption>Left: patients per class (dashed line: half of all patients). Right: expression values per class. The distributions are almost identical, so the class signal cannot be seen in overall expression; it sits in individual genes.</figcaption>
 </figure>
 <h3>Why the small class matters</h3>
-<p>Five patients are thin evidence. With a 30% hold-out for testing, each round contains only one or two E2A/PBX1 patients, so recall for this class is very coarse in a single round and only meaningful as an average over many rounds. Overall accuracy can also look fine while the class is almost always wrong, because it is only about 5% of the patients. This is why the project reports balanced accuracy and per-class recall next to accuracy.</p>
+<p>Five patients are thin evidence. With a stratified 30% hold-out, every test set contains exactly two E2A/PBX1 patients and every training set only three, so recall for this class can only be 0, 0.5 or 1 in a single round and is meaningful only as an average over many rounds. Overall accuracy can also look fine while the class is almost always wrong, because it is only about 5% of the patients. This is why the project reports balanced accuracy and per-class recall next to accuracy.</p>
 </section>
 
 <section id="hard" class="rv">
@@ -234,20 +234,21 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
 <p>The aim is to reproduce the workflow, not the R code, and to compare which setups do well rather than exact decimals. Results will not match the book exactly because the language, the random draws and the library defaults differ.</p>
 <div class="tw"><table>
   <tr><th>Aspect</th><th class="wrap">Book</th><th class="wrap">This project</th><th class="wrap">Why</th></tr>
-  <tr><td>Workflows</td><td class="wrap"><span data-k="book.workflows"></span></td><td class="wrap">24: strategies s1 (all ANOVA genes) and s2 (random-forest top 30); the clustering ensemble is not reproduced. Random forest 2 settings, SVM 4, k-NN 6.</td><td class="wrap">Run time, and the aim is the ranking pattern. All three classifiers and both main strategies are covered.</td></tr>
-  <tr><td>Resampling</td><td class="wrap">Bootstrap, <span data-k="book.rounds"></span> rounds</td><td class="wrap"><span data-k="summary.rounds"></span> stratified rounds, <span data-k="summary.holdout" data-f="p0"></span> of patients held out each time</td><td class="wrap">Keeps class proportions in every test set and gives per-class recall directly. Accuracies are therefore not like for like with the book.</td></tr>
+  <tr><td>Workflows</td><td class="wrap"><span data-k="book.workflows"></span></td><td class="wrap"><span data-k="summary.n_workflows"></span>: all three strategies, s1 (all ANOVA genes), s2 (random-forest top 30) and s3 (cluster ensemble of 50 models). Random forest 2 settings, SVM 4, k-NN 6; random forests are not run in s3.</td><td class="wrap">Run time: 50 forests of 500 trees per round is very slow, and a forest is already an ensemble. All three classifiers and all three strategies are covered.</td></tr>
+  <tr><td>Resampling</td><td class="wrap">Bootstrap, <span data-k="book.rounds"></span> rounds</td><td class="wrap"><span data-k="summary.rounds"></span> stratified rounds, <span data-k="summary.holdout" data-f="p0"></span> of patients held out each time</td><td class="wrap">Keeps class proportions in every test set, so each holds two E2A/PBX1 patients (a bootstrap test set can hold none). It also avoids the duplicated patients of a bootstrap sample, which count twice among the nearest neighbours. Accuracies are therefore not like for like with the book.</td></tr>
   <tr><td>Gene ranking</td><td class="wrap">Permutation importance (drop in accuracy)</td><td class="wrap">Impurity importance from scikit-learn</td><td class="wrap">Much faster inside many rounds. It can favour some genes, and the effect on accuracy was not measured.</td></tr>
   <tr><td>First filter</td><td class="wrap">R, <span data-k="book.first_filter" data-f="i"></span> genes</td><td class="wrap">Run in R with the same package, exported, then used in Python: <span data-k="data.first_filter" data-f="i"></span> genes; ANOVA keeps <span data-k="data.anova"></span> (book: <span data-k="book.anova"></span>)</td><td class="wrap">The filter relies on a gene-annotation database, and the current version maps more probes. Counts differ slightly.</td></tr>
-  <tr><td>Scaling</td><td class="wrap">Median and IQR for k-NN</td><td class="wrap">z-score for SVM and k-NN; median and IQR as a k-NN variant</td><td class="wrap">Distances and kernels need genes on one scale. Scalers are fitted on training patients only.</td></tr>
+  <tr><td>Scaling</td><td class="wrap">k-NN with median and IQR, or unscaled</td><td class="wrap">z-score for SVM and k-NN; median and IQR as the second k-NN variant</td><td class="wrap">Distances and kernels need genes on one scale. Scalers are fitted on training patients only.</td></tr>
+  <tr><td>Gene clusters (s3)</td><td class="wrap"><code>varclus</code>: squared Spearman correlation, complete linkage, 30 clusters</td><td class="wrap">The same distance (1 minus squared Spearman correlation) and linkage with SciPy</td><td class="wrap">Follows the book's defaults.</td></tr>
   <tr><td>Measures</td><td class="wrap">Accuracy</td><td class="wrap">Accuracy, balanced accuracy, per-class recall, confusion matrix</td><td class="wrap">Class sizes differ greatly.</td></tr>
 </table></div>
-<p>Kept as in the book: the three classifiers, the ANOVA filter inside every round, the 30-gene random-forest strategy, and accuracy as the headline measure. Added beyond the book: the extra measures, the leakage experiment, the shuffled-label check and the cell-stage check described below.</p>
+<p>Kept as in the book: the three classifiers, the ANOVA filter inside every round, the three gene-selection strategies, and accuracy as the headline measure. Added beyond the book: the extra measures, the leakage experiment, the shuffled-label checks, the cell-stage check and the gene-count study described below.</p>
 </section>
 
 <section id="results" class="rv">
-<h2><span class="num">6</span>Results: 24 workflows, two metrics</h2>
+<h2><span class="num">6</span>Results: <span data-k="summary.n_workflows"></span> workflows, two metrics</h2>
 <p class="key"><b>Key point</b>k-NN and the better SVMs lead, and the metric changes the winner: <code data-k="summary.best_acc.name"></code> is first on accuracy, <code data-k="summary.best_bal.name"></code> is first on balanced accuracy.</p>
-<p>Each workflow is a gene-selection strategy (<code>s1</code> all ANOVA genes, <code>s2</code> random-forest top 30) followed by a model. Values are means over <span data-k="summary.rounds"></span> rounds, with all selection done inside each round. In the chart, each row joins a workflow's accuracy (blue) to its balanced accuracy (orange); long links mark workflows whose accuracy hides weak recall on the small class.</p>
+<p>Each workflow is a gene-selection strategy (<code>s1</code> all ANOVA genes, <code>s2</code> random-forest top 30, <code>s3</code> cluster ensemble) followed by a model. Values are means over <span data-k="summary.rounds"></span> rounds, with all selection done inside each round. In the chart, each row joins a workflow's accuracy (blue) to its balanced accuracy (orange); long links mark workflows whose accuracy hides weak recall on the small class.</p>
 <div class="chart" id="metric-chart"></div>
 <p>The table has the same numbers and the recall of each class. The last four columns give recall for each class. Click a column header to sort. The switch picks which metric is highlighted and sorted. <i>Shift</i> is the rank by accuracy minus the rank by balanced accuracy: a positive value means the workflow looks better when each class counts equally.</p>
 <div class="switch">
@@ -256,10 +257,10 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
 <div class="tw"><table id="wf-table"></table></div>
 <h3>What the results show</h3>
 <ul>
-  <li><b>Ranking pattern.</b> k-NN and the better SVM settings lead, and no random-forest workflow is in the top ten: the best, <code data-k="summary.rf_best.name"></code>, ranks <span data-k="summary.rf_best.rank"></span> with <span data-k="summary.rf_best.accuracy" data-f="3"></span>. This matches the book. Mean accuracy by family is <span data-k="summary.family_accuracy.knn" data-f="3"></span> for k-NN, <span data-k="summary.family_accuracy.rf" data-f="3"></span> for random forest and <span data-k="summary.family_accuracy.svm" data-f="3"></span> for SVM; the SVM average is pulled down by two failing settings.</li>
+  <li><b>Ranking pattern.</b> k-NN and the better SVM settings lead, and no random-forest workflow is in the top ten: the best, <code data-k="summary.rf_best.name"></code>, ranks <span data-k="summary.rf_best.rank"></span> with <span data-k="summary.rf_best.accuracy" data-f="3"></span>. This matches the book. Mean accuracy by family is <span data-k="summary.family_accuracy.knn" data-f="3"></span> for k-NN, <span data-k="summary.family_accuracy.rf" data-f="3"></span> for random forest and <span data-k="summary.family_accuracy.svm" data-f="3"></span> for SVM; the SVM average is pulled down by a few failing settings. Of the strategies, s2 is ahead (mean accuracy 0.809), then s3 (0.770) and s1 (0.753); the best s3 workflow reaches 0.831.</li>
   <li><b>The metric changes the winner.</b> <code data-k="summary.best_acc.name"></code> is first by accuracy (<span data-k="summary.best_acc.accuracy" data-f="3"></span>, E2A/PBX1 recall <span data-k="summary.best_acc.E2A/PBX1" data-f="2"></span>). <code data-k="summary.best_bal.name"></code> is first by balanced accuracy (<span data-k="summary.best_bal.balanced_accuracy" data-f="3"></span>) with E2A/PBX1 recall <span data-k="summary.best_bal.E2A/PBX1" data-f="2"></span>, but lower accuracy (<span data-k="summary.best_bal.accuracy" data-f="3"></span>) because it makes more mistakes on NEG.</li>
   <li><b>Accuracy hides the small class.</b> <code data-k="summary.rf_zero_e2a.name"></code> has accuracy <span data-k="summary.rf_zero_e2a.accuracy" data-f="3"></span> and recognises E2A/PBX1 in <span data-k="summary.rf_zero_e2a.E2A/PBX1" data-f="p0"></span> of cases.</li>
-  <li><b>Two SVMs fail.</b> <code data-k="summary.svm_failing.0.name"></code> (<span data-k="summary.svm_failing.0.accuracy" data-f="3"></span>) and <code data-k="summary.svm_failing.1.name"></code> (<span data-k="summary.svm_failing.1.accuracy" data-f="3"></span>) predict almost only NEG. The curved kernel compares patients by squared distance; with hundreds of standardised genes that distance is large, so the kernel value with gamma 0.01 is close to zero for every pair, nothing generalises, and the model falls back to the biggest class. The same gamma works with 30 genes. SVMs are sensitive to both gamma and the number of genes.</li>
+  <li><b>Two SVMs fail.</b> <code data-k="summary.svm_failing.0.name"></code> (<span data-k="summary.svm_failing.0.accuracy" data-f="3"></span>) and <code data-k="summary.svm_failing.1.name"></code> (<span data-k="summary.svm_failing.1.accuracy" data-f="3"></span>) predict almost only NEG. The curved kernel compares patients by squared distance; with hundreds of standardised genes that distance is large, so the kernel value with gamma 0.01 is close to zero for every pair, nothing generalises, and the model falls back to the biggest class. The same gamma works with 30 genes, in s2 and in s3. SVMs are sensitive to both gamma and the number of genes.</li>
   <li><b>Differences between top workflows are small.</b> The paired tests flag <span data-k="summary.top10_p_below_005"></span> of the other <span data-k="summary.top10_others"></span> top-ten workflows as different from the best at the 5% level, unlike the book. The rounds share training patients, so these p-values are optimistic and small gaps should not be treated as established.</li>
 </ul>
 <h3>Where the best workflow makes its mistakes</h3>
@@ -276,12 +277,13 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
   <h3>Result</h3>
   <ul>
     <li>The best workflow rises from <span data-k="summary.best_acc.accuracy" data-f="3"></span> (inside) to <span data-k="summary.leak.best_outside" data-f="3"></span> (outside, <code data-k="summary.leak.best_outside_name"></code>).</li>
-    <li>Mean gain over the 24 workflows: <span data-k="summary.leak.mean_gap" data-f="s3"></span> in accuracy and <span data-k="summary.leak.mean_gap_balanced" data-f="s3"></span> in balanced accuracy. <span data-k="summary.leak.higher_outside"></span> of <span data-k="summary.leak.n"></span> workflows score higher outside the loop, and <span data-k="summary.leak.significant"></span> of <span data-k="summary.leak.n"></span> differ at the 1% level (a test with the same optimism caveat).</li>
-    <li>The effect concentrates in strategy s2: <span data-k="summary.leak.gap_s2" data-f="s3"></span> on average, against <span data-k="summary.leak.gap_s1" data-f="s3"></span> for s1.</li>
+    <li>Mean gain over the <span data-k="summary.leak.n"></span> workflows: <span data-k="summary.leak.mean_gap" data-f="s3"></span> in accuracy and <span data-k="summary.leak.mean_gap_balanced" data-f="s3"></span> in balanced accuracy. <span data-k="summary.leak.higher_outside"></span> of <span data-k="summary.leak.n"></span> workflows score higher outside the loop. A paired test at the 1% level (with the same optimism caveat) finds <span data-k="summary.leak.sig_higher"></span> significantly higher and <span data-k="summary.leak.sig_lower"></span> significantly lower.</li>
+    <li>The gain grows with how hard the selection fits the labels: <span data-k="summary.leak.gap_s1" data-f="s3"></span> for s1, <span data-k="summary.leak.gap_s3" data-f="s3"></span> for s3 and <span data-k="summary.leak.gap_s2" data-f="s3"></span> for s2.</li>
   </ul>
 </div>
 <div class="tw"><table id="leak-table"></table></div>
-<p><b>Why s2 is hit harder.</b> Picking 30 genes out of several hundred by importance leaves much more room to fit the labels, including the test patients' labels, than keeping every gene that passes a significance test. The more aggressive the selection, the larger the inflation. The exceptions at the bottom of the table are the two failing SVMs, whose scores move with the gene set rather than with any real signal.</p>
+<p><b>Why s2 is hit harder.</b> Picking 30 genes out of several hundred by importance leaves much more room to fit the labels, including the test patients' labels, than keeping every gene that passes a significance test. The more aggressive the selection, the larger the inflation. Leakage also changes the comparison of strategies: the lead of s2 over s1 grows from about 0.06 to 0.11. This selection bias is well known for microarray data (Ambroise and McLachlan, 2002); the case study warns about it, and this experiment measures it.</p>
+<p><b>The exceptions.</b> The two workflows that drop are the s1 SVMs with gamma 0.01, which already fail inside the loop. Outside the loop the ANOVA filter runs on all 94 patients and keeps more genes (751 against 410 to 648 per round), so their kernel gets even flatter and they predict NEG for everyone. For s1 the comparison therefore changes the gene count as well as adding the leak; s2 and s3 always give each model 30 genes, so their gaps measure the leak more cleanly.</p>
 </section>
 
 <section id="shuffle" class="rv">
@@ -292,11 +294,13 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
 <div class="tw"><table id="shuffle-table"></table></div>
 <h3>What it proves</h3>
 <ul>
-  <li>With selection inside the loop, the best of 24 workflows reaches <span data-k="summary.shuffle.inside_best" data-f="3"></span>, which is the always-NEG rate, and the mean balanced accuracy is <span data-k="summary.shuffle.inside_mean.balanced_accuracy" data-f="3"></span>, close to chance. The pipeline finds no signal where none exists, which supports the baseline accuracies.</li>
+  <li>With selection inside the loop, the best of <span data-k="summary.n_workflows"></span> workflows reaches <span data-k="summary.shuffle.inside_best" data-f="3"></span>, which is the always-NEG rate, and the mean balanced accuracy is <span data-k="summary.shuffle.inside_mean.balanced_accuracy" data-f="3"></span>, close to chance. The pipeline finds no signal where none exists, which supports the baseline accuracies.</li>
   <li>With selection outside the loop, the same meaningless labels give a mean accuracy of <span data-k="summary.shuffle.outside_mean.accuracy" data-f="3"></span> and a best of <span data-k="summary.shuffle.outside_best" data-f="3"></span>. There is nothing to find, so all of that gain is leakage: the chosen genes were picked to fit the shuffled labels.</li>
 </ul>
+<h3>Permutation test</h3>
+<p>One shuffle gives one number. For the workflow with the best balanced accuracy, <code>s1_knn3_iqr</code>, the shuffle was repeated <span data-k="summary.permutation.n"></span> times (20 rounds each, selection inside every round). The true labels give a balanced accuracy of <span data-k="summary.permutation.real" data-f="3"></span>. The shuffled labels give <span data-k="summary.permutation.null_mean" data-f="3"></span> on average and at most <span data-k="summary.permutation.null_max" data-f="3"></span>, so no shuffle comes close, and the p-value is <span data-k="summary.permutation.p" data-f="3"></span>, the smallest possible with this many shuffles.</p>
 <h3>What it does not prove</h3>
-<p>It uses one shuffle and 50 rounds, so the figures are indicative. It shows that the pipeline does not leak in this way; it does not show that the real accuracy is free of every other bias, such as the cell-stage question below.</p>
+<p>It shows that the pipeline does not leak in this way; it does not show that the real accuracy is free of every other bias, such as the cell-stage question below.</p>
 </section>
 
 <section id="stage" class="rv">
@@ -319,14 +323,30 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
 </ul>
 </section>
 
+<section id="genes" class="rv">
+<h2><span class="num">10</span>How many genes?</h2>
+<p class="key"><b>Key point</b>The book's 30 genes are reasonable but not optimal, and the best number depends on the model.</p>
+<p>The book keeps 30 genes in s2 and does not try other numbers. Here the random-forest ranking of each round was cut at 5, 10, 20, 30, 50, 100 and 200 genes, with the same splits as the baseline, for k-NN (k = 3) and for the book's best SVM (cost 100, gamma 0.01).</p>
+<figure>
+  <img src="assets/gene_count.png" alt="Line charts of accuracy and balanced accuracy against the number of genes kept, for k-NN and SVM">
+  <figcaption>Mean accuracy (left) and balanced accuracy (right) against the number of genes kept; the dashed line marks the book's 30.</figcaption>
+</figure>
+<ul>
+  <li><b>k-NN keeps improving up to about 100 genes:</b> balanced accuracy <span data-k="summary.gene_count.knn.100.balanced_accuracy" data-f="3"></span> against <span data-k="summary.gene_count.knn.30.balanced_accuracy" data-f="3"></span> at 30, mostly because E2A/PBX1 recall rises from <span data-k="summary.gene_count.knn.30.E2A/PBX1" data-f="2"></span> to <span data-k="summary.gene_count.knn.100.E2A/PBX1" data-f="2"></span>.</li>
+  <li><b>The SVM peaks at 50 genes and then falls</b> (balanced accuracy <span data-k="summary.gene_count.svm.200.balanced_accuracy" data-f="3"></span> at 200), the same flattening of the kernel that breaks the s1 SVMs.</li>
+  <li><b>This is a sensitivity study, not a tuned result.</b> Picking the best number from this chart would reuse the test rounds that scored it. A fair choice would tune the number inside each training set.</li>
+</ul>
+</section>
+
 <section id="meaning" class="rv">
-<h2><span class="num">10</span>What this means, and the limits</h2>
+<h2><span class="num">11</span>What this means, and the limits</h2>
 <p>Gene activity does carry enough information to separate these leukaemia subtypes better than guessing, and the ranking of methods follows the original case study. The more transferable lesson concerns evaluation: the way genes are selected can change the reported accuracy by several points, the best model depends on the metric, and a shuffled-label control is a cheap way to check a pipeline.</p>
 <div class="box note">
   <h3>Limits</h3>
   <ul>
     <li><b>Small sample.</b> <span data-k="data.patients"></span> patients from one study.</li>
-    <li><b>The five-patient class.</b> E2A/PBX1 recall is coarse and noisy; each test set holds one or two of these patients.</li>
+    <li><b>The five-patient class.</b> E2A/PBX1 recall is coarse and noisy; each test set holds two of these patients.</li>
+    <li><b>Picking the winner.</b> The best workflow is chosen after comparing the means of all workflows on the same splits, so its score slightly overstates what it would reach on new patients. A nested evaluation would correct this and was not run.</li>
     <li><b>One seed and one resampling scheme.</b> The sizes of the gaps are specific to this setup. Accuracies differ from the book by design (resampling, gene counts, importance method) and should not be compared as decimals.</li>
     <li><b>Optimistic significance tests.</b> The rounds share training patients, so the paired p-values are too small. The book has the same issue.</li>
     <li><b>Importance method.</b> Impurity importance was used instead of permutation importance, and the two were not compared.</li>
@@ -336,7 +356,7 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 48px; border-top: 1
 </section>
 
 <section id="reproduce" class="rv">
-<h2><span class="num">11</span>How to reproduce</h2>
+<h2><span class="num">12</span>How to reproduce</h2>
 <p>The exported data and all results are included in the repository, so the notebooks can be run without R. The R steps regenerate the data files.</p>
 <pre><code>git clone &lt;repository-url&gt;
 cd &lt;project-folder&gt;
@@ -348,7 +368,7 @@ pip install -r requirements.txt
 Rscript src/export_all.R
 Rscript src/export_filter.R
 
-# run the notebooks in order (about 45 minutes in total)
+# run the notebooks in order (about an hour in total)
 for n in notebooks/0*.ipynb; do jupyter nbconvert --to notebook --execute --inplace "$n"; done
 
 # refresh the numbers on this page
@@ -357,10 +377,11 @@ python src/build_site_data.py</code></pre>
 </section>
 
 <section id="reference" class="rv">
-<h2><span class="num">12</span>Reference and data source</h2>
+<h2><span class="num">13</span>References and data source</h2>
 <ul>
   <li>Torgo, L. (2017). <i>Data Mining with R: Learning with Case Studies</i> (2nd ed.). CRC Press. Chapter 7, pp. 353-381.</li>
   <li>Chiaretti, S., Li, X., Gentleman, R., et al. (2004). Gene expression profile of adult T-cell acute lymphocytic leukemia identifies distinct subsets of patients with different response to therapy and survival. <i>Blood</i>, 103(7), 2771-2778. Data distributed as the Bioconductor <code>ALL</code> package.</li>
+  <li>Ambroise, C. and McLachlan, G. J. (2002). Selection bias in gene extraction on the basis of microarray gene-expression data. <i>PNAS</i>, 99(10), 6562-6566.</li>
 </ul>
 <footer>Every number on this page is read from <code>assets/data.js</code>, which <code>src/build_site_data.py</code> builds from the files in <code>results/</code> and <code>data/</code>. Figures quoted from the book are labelled as such.</footer>
 </section>
@@ -500,8 +521,8 @@ sortable(document.getElementById('leak-table'), [
 // shuffle bars and table
 const S = R.summary.shuffle;
 hbars(document.getElementById('shuffle-bars'), [
-  ['Inside, mean of 24', S.inside_mean.accuracy], ['Inside, best workflow', S.inside_best],
-  ['Outside, mean of 24', S.outside_mean.accuracy, 'out'], ['Outside, best workflow', S.outside_best, 'out']
+  [`Inside, mean of ${R.summary.n_workflows}`, S.inside_mean.accuracy], ['Inside, best workflow', S.inside_best],
+  [`Outside, mean of ${R.summary.n_workflows}`, S.outside_mean.accuracy, 'out'], ['Outside, best workflow', S.outside_best, 'out']
 ], neg, 'always NEG ' + F['3'](neg));
 document.getElementById('shuffle-table').innerHTML =
   '<thead><tr><th>Gene selection</th><th>Mean accuracy</th><th>Best accuracy</th><th>Mean balanced acc.</th><th>Best balanced acc.</th></tr></thead><tbody>' +

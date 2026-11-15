@@ -1,6 +1,6 @@
 # The Problem in Plain Words: Telling Leukaemia Subtypes Apart from Gene Activity
 
-*A problem statement for the Leukaemia Mining project, based on a case study from Torgo's* Data Mining with R *(Chapter 7). It explains the biology in everyday language, states exactly what is being tested, what a data-mining solution involves, and the planned approach. Specific methods are deliberately left open.*
+*A problem statement for the Leukaemia Mining project, based on a case study from Torgo's* Data Mining with R *(Chapter 7). It explains the biology in everyday language, states exactly what is being tested, what a data-mining solution involves, and the approach taken.*
 
 ---
 
@@ -127,7 +127,7 @@ Whoever takes this on, in any language, goes through these stages and justifies 
 
 ---
 
-## 8. Planned approach
+## 8. Approach
 
 The project works in two layers.
 
@@ -135,30 +135,17 @@ The project works in two layers.
 
 **Layer 2: One extension.** Change one thing on purpose, measure the effect against the baseline on the same data splits, and explain what changed and why. The extension does not need to beat the baseline; it needs to be evaluated and interpreted properly.
 
-### Order of work
+### Decisions taken
 
-1. Finish the description of the problem (this document and the chapter walkthrough).
-2. Export the data from R to plain files usable in Python.
-3. Explore the data and check it matches the book (94 patients, 12,625 genes, the class counts above).
-4. Decide the baseline.
-5. Decide the extension.
-6. Run, compare, interpret.
-7. Summarise the results.
-
-### Decisions deliberately left open
-
-Nothing below is chosen yet. Choices will be recorded here as they are made.
-
-- Which parts of the book's workflow to reproduce, and how many of its 54 setups.
-- How to get the data out of Bioconductor and into Python.
-- How to scale the genes.
-- How to select genes, and how many to keep.
-- Which models to train.
-- How to evaluate (bootstrap, cross-validation, leave-one-out), and which measures besides accuracy.
-- What the extension will be.
-- How to handle the five-patient class.
-
----
+| Question | Choice |
+| --- | --- |
+| Which parts of the book's workflow | All three gene-selection strategies (s1, s2, s3) with random forest, SVM and k-NN: 34 of the book's 54 workflows |
+| Getting the data into Python | Exported from R to CSV (`src/export_all.R`, `src/export_filter.R`) |
+| Scaling | Inside each model pipeline: z-score for SVM and k-NN, median and IQR as a second k-NN variant |
+| Gene selection | Label-free filter once; ANOVA filter, random-forest ranking and clustering inside every resampling round |
+| Evaluation | 100 rounds of stratified resampling with 30% held out; accuracy, balanced accuracy, per-class recall, confusion matrix |
+| Extension | Gene selection inside versus outside the evaluation loop, with shuffled-label and cell-stage checks, and a study of the number of genes |
+| The five-patient class | Stratified splits (2 of the 5 patients in every test set) and per-class recall |
 
 ## 9. Things to keep honest about
 

@@ -1,4 +1,4 @@
-# Export the probes kept by the book's label-free first filter (3,943 of 12,625).
+# Export the probes kept by the book's label-free first filter (4,025 of 12,625 here; 3,943 in the book).
 # Run from the project root after src/export_all.R: Rscript src/export_filter.R
 library(ALL)
 library(genefilter)
@@ -9,7 +9,8 @@ tgt.cases <- which(ALL$BT %in% levels(ALL$BT)[1:5] &
 ALLb <- ALL[, tgt.cases]
 es <- exprs(ALLb)
 
-# Drops control probes, probes without a gene id, duplicate probes and low-IQR probes
+# Drops control probes, probes without a gene id and duplicate probes, then the least variable 54% of the rest
+# (nsFilter reads var.cutoff as a quantile because filterByQuantile = TRUE by default)
 res <- nsFilter(ALLb, var.func = IQR, var.cutoff = IQR(as.vector(es)) / 5,
                 feature.exclude = "^AFFX")
 print(res$filter.log)
