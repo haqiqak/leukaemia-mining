@@ -31,12 +31,12 @@ Means over the resampling rounds. Always answering NEG scores 0.447.
 | Best of the cluster ensemble (s3) | 0.831 (`s3_svm_C100_g0.001`) |
 | Accuracy gain when genes are selected outside the loop | +0.039 on average over 34 workflows (s1 +0.014, s3 +0.041, s2 +0.063) |
 | Best workflow outside the loop | 0.928 (`s2_knn5_z`, 0.839 inside) |
-| Shuffled labels, best workflow, selection inside / outside | 0.448 / 0.578 |
+| Shuffled labels, best accuracy, selection inside / outside | 0.448 / 0.578 |
 | Permutation test, `s1_knn3_iqr`, 200 shuffles | balanced accuracy 0.877, against at most 0.387 with shuffled labels (p = 0.005) |
 | ALL1/AF4 against NEG within one cell stage (18 patients) | accuracy 0.957 |
 | k-NN with 100 genes instead of 30 | balanced accuracy 0.899 (0.847 with 30) |
 
-In short: the ranking of methods follows the book (k-NN and the better SVM settings lead, no random forest in the top ten, s2 ahead of s3 and s1), the best model depends on the metric, and choosing genes before splitting the data inflates results and exaggerates the differences between selection strategies.
+Overall, the ranking of methods follows the book (k-NN and the better SVM settings lead, no random forest in the top ten, s2 ahead of s3 and s1), the best model depends on the metric, and choosing genes before splitting the data inflates results and exaggerates the differences between selection strategies.
 
 ## Repository layout
 
@@ -52,7 +52,19 @@ Background reading: [docs/02_problem_statement.md](docs/02_problem_statement.md)
 
 ## Run it
 
-Tested with Python 3.13 and R 4.5.3. Random draws use fixed seeds, and a clean rerun of every notebook reproduces the saved results. The one exception is the 18-patient check in notebook 05, which can differ in the third decimal between machines.
+### Versions
+
+| Software | Version |
+| --- | --- |
+| Python | 3.13 |
+| numpy, pandas, scikit-learn, scipy | 2.5.4, 3.1.1, 1.9.1, 1.18.1 |
+| matplotlib, seaborn, jupyter | 3.11.2, 0.13.2, 1.1.1 |
+| R (only to export the data) | 4.5.3 |
+| Bioconductor: ALL, Biobase, genefilter, hgu95av2.db | 1.52.0, 2.70.0, 1.92.0, 3.13.0 |
+
+The Python versions are pinned in `requirements.txt`.
+
+### Setup
 
 ```
 python -m venv .venv
@@ -60,9 +72,20 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-The exported data is already in `data/`. To regenerate it, install the Bioconductor packages `ALL`, `genefilter` and `hgu95av2.db`, then run `Rscript src/export_all.R` and `Rscript src/export_filter.R` (details in [data/README.md](data/README.md)).
+### Steps to reproduce the results
 
-Run the notebooks in order. Run times are from a two-core machine.
+1. The exported data is already in `data/`, so R is not needed to rerun the analysis. To regenerate the data, install the Bioconductor packages `ALL`, `genefilter` and `hgu95av2.db`, then run `Rscript src/export_all.R` and `Rscript src/export_filter.R` from the project root (details in [data/README.md](data/README.md)).
+2. Start Jupyter from the `notebooks` folder, because the notebooks read `../data` and write to `../results`:
+
+   ```
+   cd notebooks
+   jupyter notebook
+   ```
+
+3. Run the notebooks in order, each from top to bottom. Notebook 03 compares against the baseline scores that notebook 02 saves, so 02 must run first. Notebook 04 reuses the saved shuffled-label scores in `results/` if they exist; delete `shuffle_inside_scores.csv` and `shuffle_outside_scores.csv` to recompute them. To run everything without opening the notebooks: `jupyter nbconvert --to notebook --execute --inplace 0*.ipynb`.
+4. Optionally, refresh the project page numbers with `python src/build_site_data.py` from the project root.
+
+Random draws use fixed seeds, and a clean rerun reproduces the saved results. The one exception is the 18-patient check in notebook 05, which can differ in the third decimal between machines. Run times below are from a two-core machine.
 
 | Notebook | Content | Run time |
 | --- | --- | --- |
